@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TFV Support Training — Toll-Free Verification</title>
+<style>
+  :root{
+    --green:#0d8a6a; --green-dark:#0a6b53; --green-light:#e6f5f1;
+    --ink:#1f2430; --muted:#5b6472; --bg:#f6f7f9; --card:#ffffff;
+    --border:#e2e6ec; --amber:#b45309; --amber-bg:#fef3e2;
+    --red:#b91c1c; --red-bg:#fdeaea; --blue:#1d4ed8; --blue-bg:#e8effd;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+  /* Layout */
+  #app{display:flex;min-height:100vh}
+  #sidebar{width:280px;background:var(--card);border-right:1px solid var(--border);padding:20px 0;position:fixed;top:0;bottom:0;overflow-y:auto;z-index:20;transition:transform .2s}
+  #main{flex:1;margin-left:280px;padding:32px 24px 80px;display:flex;justify-content:center}
+  #content{width:100%;max-width:780px}
+  /* Sidebar */
+  .brand{padding:0 20px 14px;border-bottom:1px solid var(--border);margin-bottom:10px}
+  .brand h1{font-size:16px;color:var(--green-dark)}
+  .brand p{font-size:12px;color:var(--muted)}
+  .progress-wrap{padding:12px 20px;border-bottom:1px solid var(--border);margin-bottom:8px}
+  .progress-bar{height:8px;background:var(--border);border-radius:4px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--green);width:0%;transition:width .3s}
+  .progress-label{font-size:11px;color:var(--muted);margin-top:5px}
+  .mod-group{margin-bottom:4px}
+  .mod-title{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;cursor:pointer;padding:9px 20px;font-size:13px;font-weight:600;color:var(--ink)}
+  .mod-title:hover{background:var(--bg)}
+  .mod-title .chev{margin-left:auto;font-size:10px;color:var(--muted);transition:transform .15s}
+  .mod-group.open .chev{transform:rotate(90deg)}
+  .mod-lessons{display:none}
+  .mod-group.open .mod-lessons{display:block}
+  .lesson-link{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:none;cursor:pointer;padding:7px 20px 7px 34px;font-size:12.5px;color:var(--muted)}
+  .lesson-link:hover{background:var(--bg)}
+  .lesson-link.active{background:var(--green-light);color:var(--green-dark);font-weight:600;border-right:3px solid var(--green)}
+  .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:9px;color:#fff}
+  .dot.done{background:var(--green);border-color:var(--green)}
+  /* Quick ref button */
+  .sidebar-actions{padding:14px 20px;border-top:1px solid var(--border);margin-top:10px}
+  .qr-btn{width:100%;padding:9px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+  .qr-btn:hover{background:#000}
+  .qr-btn.codes{background:var(--card);color:var(--ink);border:1px solid var(--border);margin-top:8px}
+  .qr-btn.codes:hover{background:var(--bg)}
+  /* Content */
+  .crumb{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+  h2.lesson-h{font-size:26px;margin-bottom:18px}
+  .lesson-body h3{font-size:17px;margin:24px 0 8px;color:var(--green-dark)}
+  .lesson-body h4{font-size:14.5px;margin:18px 0 6px}
+  .lesson-body p{margin:0 0 12px;font-size:14.5px}
+  .lesson-body ul,.lesson-body ol{margin:0 0 14px 22px;font-size:14.5px}
+  .lesson-body li{margin-bottom:6px}
+  .lesson-body table{border-collapse:collapse;width:100%;margin:10px 0 18px;font-size:13px;background:var(--card)}
+  .lesson-body th,.lesson-body td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top}
+  .lesson-body th{background:var(--bg);font-weight:600}
+  .lesson-body code{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:12.5px}
+  .lesson-body a{color:var(--blue)}
+  /* Callouts */
+  .callout{border-radius:var(--radius);padding:13px 16px;margin:14px 0;font-size:13.5px;border:1px solid}
+  .callout strong{display:block;margin-bottom:4px}
+  .callout.warn{background:var(--amber-bg);border-color:#f0d6ad;color:#7c3e08}
+  .callout.danger{background:var(--red-bg);border-color:#f3c6c6;color:#8f1d1d}
+  .callout.tip{background:var(--green-light);border-color:#bfe3d8;color:var(--green-dark)}
+  .callout.info{background:var(--blue-bg);border-color:#c9d8f7;color:#1e3a8a}
+  /* Screenshot placeholder */
+  .shot{border:2px dashed var(--border);border-radius:var(--radius);background:var(--card);padding:26px 16px;text-align:center;margin:14px 0}
+  .shot .cam{font-size:22px}
+  .shot p{font-size:12.5px;color:var(--muted);margin:6px 0 0}
+  .shot-img{margin:16px 0;text-align:center}
+  .shot-img img{max-width:100%;border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 1px 4px rgba(20,24,32,.08)}
+  .shot-img figcaption{font-size:12px;color:var(--muted);font-style:italic;margin-top:6px}
+  /* Nav buttons */
+  .lesson-nav{display:flex;justify-content:space-between;gap:12px;margin-top:36px;padding-top:18px;border-top:1px solid var(--border)}
+  .nav-btn{padding:11px 20px;border-radius:8px;border:1px solid var(--border);background:var(--card);font-size:14px;cursor:pointer}
+  .nav-btn.primary{background:var(--green);border-color:var(--green);color:#fff;font-weight:600}
+  .nav-btn.primary:hover{background:var(--green-dark)}
+  .nav-btn:disabled{opacity:.4;cursor:default}
+  /* Quiz */
+  .quiz-q{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+  .quiz-q .qtext{font-weight:600;font-size:14.5px;margin-bottom:12px}
+  .quiz-opt{display:block;width:100%;text-align:left;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;font-size:13.5px;cursor:pointer}
+  .quiz-opt:hover{border-color:var(--green)}
+  .quiz-opt.correct{background:var(--green-light);border-color:var(--green);color:var(--green-dark);font-weight:600}
+  .quiz-opt.wrong{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+  .quiz-opt:disabled{cursor:default}
+  .quiz-explain{display:none;font-size:13px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border)}
+  .quiz-score{text-align:center;padding:20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-top:8px;font-size:15px;display:none}
+  /* Modal */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(20,24,32,.55);z-index:50;align-items:flex-start;justify-content:center;padding:4vh 16px}
+  .modal-bg.open{display:flex}
+  .modal{background:var(--card);border-radius:14px;max-width:1000px;width:100%;max-height:92vh;display:flex;flex-direction:column;overflow:hidden}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid var(--border)}
+  .modal-head h3{font-size:17px}
+  .modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted)}
+  .modal-body{padding:18px 22px;overflow-y:auto}
+  .modal-body table{border-collapse:collapse;width:100%;font-size:12.5px}
+  .modal-body th,.modal-body td{border:1px solid var(--border);padding:7px 9px;text-align:left;vertical-align:top}
+  .modal-body th{background:var(--bg);position:sticky;top:-18px}
+  .code-search{width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:12px}
+  .pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;white-space:nowrap}
+  .pill.compliance{background:var(--red-bg);color:var(--red)}
+  .pill.coach{background:var(--green-light);color:var(--green-dark)}
+  .pill.pod{background:var(--blue-bg);color:var(--blue)}
+  .pill.backline{background:var(--amber-bg);color:var(--amber)}
+  .pill.activations{background:#f3e8fd;color:#7e22ce}
+  /* Home screen */
+  .home-hero{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:30px;margin-bottom:20px}
+  .home-hero h2{font-size:24px;margin-bottom:8px}
+  .home-hero p{color:var(--muted);font-size:14.5px;margin-bottom:16px}
+  .mod-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .mod-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;cursor:pointer;text-align:left}
+  .mod-card:hover{border-color:var(--green)}
+  .mod-card .num{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em}
+  .mod-card h3{font-size:15px;margin:4px 0 6px}
+  .mod-card p{font-size:12.5px;color:var(--muted)}
+  .mod-card .stat{font-size:11.5px;color:var(--muted);margin-top:10px}
+  /* Mobile */
+  #menu-toggle{display:none;position:fixed;top:14px;left:14px;z-index:30;background:var(--ink);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:14px;cursor:pointer}
+  @media(max-width:860px){
+    #sidebar{transform:translateX(-100%)}
+    #sidebar.open{transform:translateX(0)}
+    #main{margin-left:0;padding-top:60px}
+    #menu-toggle{display:block}
+    .mod-cards{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<button id="menu-toggle">☰ Menu</button>
+<div id="app">
+  <nav id="sidebar"></nav>
+  <div id="main"><div id="content"></div></div>
+</div>
+
+<div class="modal-bg" id="qr-modal">
+  <div class="modal">
+    <div class="modal-head"><h3>Quick Reference — TFN rejection types</h3><button class="modal-close" data-close="qr-modal">×</button></div>
+    <div class="modal-body" id="qr-body"></div>
+  </div>
+</div>
+<div class="modal-bg" id="codes-modal">
+  <div class="modal">
+    <div class="modal-head"><h3>Error Code Lookup</h3><button class="modal-close" data-close="codes-modal">×</button></div>
+    <div class="modal-body">
+      <input class="code-search" id="code-search" placeholder="Search by code, keyword, or owner — e.g. 30456, alcohol, compliance…">
+      <div id="codes-table"></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:10px">⚠ Known conflicting mappings exist between older docs — always confirm against the live <a href="https://docs.google.com/spreadsheets/d/1E-aPL5CqGk8PBQgJFcttn18vj_ZUrXaqlXpSdFrylDQ/edit?gid=2134931306#gid=2134931306" target="_blank">Error Code Map</a> before quoting a code to a customer or routing on it.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ CONTENT DATA ============ */
+const SHOT = (caption) => `<div class="shot"><div class="cam">📷</div><p><strong>Screenshot placeholder:</strong> ${caption}</p></div>`;
+/* Screenshots served from the shared Drive folder (viewers need link access). */
+const DRIVE_IMG = (id) => `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
+const IMAGES = {
+  subaccount_tag:   DRIVE_IMG("13z53zLri_51WXYTTNR2dPr69mEJ1OcMi"),
+  inapp_rejection:  DRIVE_IMG("1vNK8gGmD688wgMDW0NJY3mrs5WrYf0q3"),
+  configure_tab:    DRIVE_IMG("183VsJpSr7bIjHtq7tZpO4LySv0gnbDgf"),
+  review_info:      DRIVE_IMG("1BBZuoyd5Lj4oYJHV1p6Udo9Ya0jSrDoh"),
+  reg_info_progress:DRIVE_IMG("1S4P9UdwNKnf1PLbIhaxtNeAb9ubzFqLB"),
+  staffside_mobile: DRIVE_IMG("1eD4cPZSp6o0eSxX2WpFH83_jsg6ZSwio"),
+  active_numbers:   DRIVE_IMG("100KlXgYn8CbK3QKLMphkx1uz3S85o0LR"),
+  step1:            DRIVE_IMG("13bj-HPej6YEpDSVVkqG9qEON3vCWoBI5"),
+  step2:            DRIVE_IMG("1mMITAHJMKX4nlHfrzzkMKGPVvpJhNsxc"),
+  step3_form:       DRIVE_IMG("18N6XWtKlo60KfglC3jGQOaW59dQmcGGy"),
+  additional_info:  DRIVE_IMG("1ZoMnsLu0lxw4-a2J_C5zGZuKZOoOqJP8"),
+  biz_profile:      DRIVE_IMG("11IPd57FcreK8a0ZzPEmJlhyj8Yh-clox")
+};
+function imgFail(el){
+  const fig = el.closest("figure");
+  const cap = fig.querySelector("figcaption").textContent;
+  fig.outerHTML = SHOT(cap + " (image unavailable — check Drive folder access)");
+}
+const IMG = (key, caption) => IMAGES[key]
+  ? `<figure class="shot-img"><img src="${IMAGES[key]}" alt="${caption.replace(/"/g,"&quot;")}" loading="lazy" onerror="imgFail(this)"><figcaption>${caption}</figcaption></figure>`
+  : SHOT(caption);
+
+const MODULES = [
+{
+  id:"m1", title:"Module 1 — Orientation", short:"Orientation",
+  blurb:"What TFV is, who owns what, your tools, and the Twilio guardrails that keep you safe.",
+  lessons:[
+    {id:"m1l1", title:"What you're handling", html:`
+      <p>A toll-free number (TFN) can't send US or Canada SMS until its use case passes <strong>Toll-Free Verification (TFV)</strong> — a carrier-mandated review of the business and how it intends to message.</p>
+      <ul>
+        <li>Verification runs <strong>automatically</strong> when an account user activates a TFN.</li>
+        <li>It takes <strong>2–5 business days on average</strong> and ends in approval or rejection.</li>
+        <li>Unverified or rejected numbers are <strong>blocked from sending</strong>.</li>
+      </ul>
+      <h3>Who owns the customer</h3>
+      <p>The D&amp;C Pod is the primary escalation point when Frontline can't resolve a TFV ticket. From the moment a ticket reaches the Pod, <strong>the Pod owns the customer relationship through resolution</strong> — including all customer communication.</p>
+      <div class="callout info"><strong>Internal resources are not customer facing.</strong>Unless otherwise noted, Compliance and Activations are internal unblocking resources only. The exceptions are verified SHAFT and AUP violations where disabling an account is required (Compliance) and for verification troubleshooting for recently ported or released TFN (Activations).</div>
+    `},
+    {id:"m1l2", title:"Your tools", html:`
+      <p>You'll work with three tools on TFV tickets:</p>
+      <ul>
+        <li><strong>Staffside Mobile tab</strong> — number status, rejection reason / Provider Error Code, Sync Verification, Release Number.</li>
+        <li><strong>Twilio Console (subaccount)</strong> — vendor rejection detail and manual resubmission.</li>
+        <li><strong>Prohibited-content recategorization tool</strong> — reset a false-positive content score to "None".</li>
+      </ul>
+      <div class="callout tip"><strong>Golden rule</strong>Always confirm you're in the right subaccount before doing anything in Twilio — search by the <strong>KA (account ID)</strong> on your ticket. Never act in a subaccount that doesn't match the ticket in front of you. The subaccount tag is clearly listed at the top of the page.</div>
+      ${IMG("subaccount_tag","Twilio Console — subaccount tag shown at the top of the page")}
+    `},
+    {id:"m1l3", title:"⚠ Twilio Console — Do Not Touch", html:`
+      <p>A wrong edit in the console can break messaging for a live account. Stay inside the TFV workflow and leave everything else alone.</p>
+      <div class="callout danger"><strong>Never edit or delete:</strong>
+        <ul style="margin:6px 0 0 18px">
+          <li><strong>Messaging Services</strong> (sender pools, number assignments, config) — breaks sending for the whole account.</li>
+          <li><strong>Webhook / messaging URLs</strong> (inbound + status callback) — these route messages to Klaviyo.</li>
+          <li><strong>Phone numbers</strong> — don't release, delete, or buy numbers within Twilio Console.</li>
+          <li>A number's <strong>friendly name or configuration</strong> — don't rename or reconfigure.</li>
+          <li><strong>Business Profiles / Regulatory Bundles</strong> beyond the specific TFV submission.</li>
+          <li><strong>A2P 10DLC Brand/Campaign registrations, Short Codes, Alphanumeric Sender IDs</strong> — different programs; out of scope.</li>
+          <li><strong>Voice, TwiML apps, SIP, Studio Flows, Functions, Verify services</strong> — out of scope.</li>
+          <li><strong>Account settings, billing, API keys / Auth Tokens</strong> — never view, regenerate, or change.</li>
+        </ul>
+      </div>
+      <div class="callout tip"><strong>Do — but only via the documented process:</strong>
+        <ul style="margin:6px 0 0 18px">
+          <li><strong>Delete a verification</strong> — only for a stuck verification in-progress &gt;7 business days (Workflow 6F). Never casually.</li>
+          <li><strong>Manual TFV resubmission</strong> — only through Workflow 6G, with the "Klaviyo manual resubmission" note in Additional Information.</li>
+          <li><strong>Release a number from Staffside</strong> — only per Workflow 6H. Ported-in / recovery work goes to Activations.</li>
+        </ul>
+      </div>
+      <div class="callout warn"><strong>Prompts to ignore:</strong>
+        <ul style="margin:6px 0 0 18px">
+          <li>"Add an emergency address (or incur a $75 charge per emergency call)" — click <strong>IGNORE</strong>; do not add an emergency address.</li>
+          <li>Don't hit <strong>"Register again" repeatedly</strong> — it can create duplicate submissions.</li>
+        </ul>
+      </div>
+    `},
+    {id:"m1l4", title:"Customer communication rules", html:`
+      <ul>
+        <li><strong>Timing:</strong> say "typically 2–5 business days" — <strong>never promise a specific date</strong>.</li>
+        <li><strong>After you act</strong> (reset a score, manually resubmit), proactively tell the customer what was done and what to watch for. The ticket can be solved or placed in Pending per Support ticket processing rules.</li>
+        <li><strong>Single point of contact:</strong> the Pod stays the customer's contact through resolution — Compliance and Activations don't contact the customer.</li>
+        <li><strong>Legal/consent questions (TCPA/CASL):</strong> general best-practice only, include the standard legal disclaimer; <strong>never give legal advice</strong>.</li>
+      </ul>
+    `}
+  ],
+  quiz:[
+    {q:"How long should you tell a customer TFV typically takes?", opts:["Exactly 3 business days","Typically 2–5 business days","Up to 24 hours","2–5 calendar weeks"], a:1, ex:"Always say “typically 2–5 business days” and never promise a specific date."},
+    {q:"A TFV ticket has been escalated to the D&C Pod. Who communicates with the customer from that point on?", opts:["Frontline keeps ownership","Compliance, if content is involved","The Pod, through resolution","Whoever is fastest"], a:2, ex:"The Pod owns the customer relationship through resolution. Compliance and Activations are internal-only."},
+    {q:"Before taking any action in the Twilio Console, you must always…", opts:["Regenerate the API key","Confirm the subaccount KA matches your ticket","Release the number first","Update the messaging service"], a:1, ex:"Golden rule: search by the KA on your ticket and never act in a subaccount that doesn't match."},
+    {q:"Twilio prompts you to add an emergency address or incur a $75 charge per emergency call. What do you do?", opts:["Add the business address","Add Klaviyo HQ's address","Click IGNORE","Escalate to Backline"], a:2, ex:"Click IGNORE — do not add an emergency address."},
+    {q:"Which action is permitted in the Twilio Console (via the documented process)?", opts:["Editing webhook URLs","Renaming a number's friendly name","Manual TFV resubmission per Workflow 6G","Buying a replacement number"], a:2, ex:"Manual resubmission via 6G (with the Klaviyo note), deleting a stuck verification per 6F, and staffside number release per 6H are the only sanctioned actions."}
+  ]
+},
+{
+  id:"m2", title:"Module 2 — Triage: who owns this ticket?", short:"Triage & ownership",
+  blurb:"Route every ticket to the right owner before you touch it, and escalate with complete documentation.",
+  lessons:[
+    {id:"m2l1", title:"The ownership table", html:`
+      <p>Before working any TFV ticket, confirm it's actually yours. Route by what the ticket is:</p>
+      <table>
+        <tr><th>If the ticket is…</th><th>Owner</th></tr>
+        <tr><td>In-app / submission error, or code <code>K0002</code> / <code>K0003</code></td><td><strong>Backline</strong> (Frontline-direct)</td></tr>
+        <tr><td>Prohibited content confirmed on the site — SHAFT or non-SHAFT AUP violations (loan marketing, lead-gen/fraud, debt collection)</td><td><strong>Compliance</strong> — owns determination and any SMS disablement</td></tr>
+        <tr><td>TFN ported in, or TFN released / recovery needed</td><td><strong>Activations</strong> (not Pod)</td></tr>
+        <tr><td>K0001 false positive, "unable to verify", BRN/registration detail, age-gate, subaccount review, or a stuck verification</td><td><strong>D&amp;C Pod</strong> — Module 5 workflows</td></tr>
+      </table>
+      <div class="callout info"><strong>SHAFT</strong>Sex, Hate, Alcohol, Firearms, Tobacco — including Cannabis/CBD.</div>
+    `},
+    {id:"m2l2", title:"Escalation documentation requirements", html:`
+      <p>Incomplete escalations get bounced back at every level. Every escalation must carry its context with it.</p>
+      <h3>Frontline → Pod must include</h3>
+      <ol>
+        <li>The rejection reason/code from staffside.</li>
+        <li>What the customer was coached to correct, and whether a resubmission was attempted.</li>
+        <li>Why it couldn't be resolved at Frontline.</li>
+      </ol>
+      <h3>Pod → Compliance / Activations must include</h3>
+      <ol>
+        <li>Full rejection context + subaccount findings.</li>
+        <li>What was attempted at Pod level.</li>
+        <li>The specific unblock needed.</li>
+      </ol>
+    `}
+  ],
+  quiz:[
+    {q:"A ticket shows rejection code K0003. Who owns it?", opts:["D&C Pod","Compliance","Backline","Activations"], a:2, ex:"K0002/K0003 are bug-path codes — Backline owns them (Frontline-direct)."},
+    {q:"You review a customer's site and confirm it sells firearms. Who owns the ticket?", opts:["D&C Pod","Compliance","Backline","Activations"], a:1, ex:"Confirmed prohibited content (SHAFT or non-SHAFT AUP) goes to Compliance, which owns the determination and any SMS disablement."},
+    {q:"A customer ported in a TFN that needs verification. Who owns it?", opts:["D&C Pod","Frontline","Backline","Activations"], a:3, ex:"Ported-in or released/recovery TFNs go directly to Activations — not the Pod."},
+    {q:"Which is NOT required in a Frontline → Pod escalation?", opts:["The rejection reason/code from staffside","Coaching given and whether resubmission was attempted","Why it couldn't be resolved at Frontline","The customer's MRR history for the past year"], a:3, ex:"The three requirements: rejection code, coaching/resubmission status, and why Frontline couldn't resolve it."}
+  ]
+},
+{
+  id:"m3", title:"Module 3 — The live-ticket checklist", short:"Live-ticket checklist",
+  blurb:"The 8-step process to work every TFV ticket, top to bottom.",
+  lessons:[
+    {id:"m3l1", title:"Work top to bottom", html:`
+      <p>Work this checklist in order on every live ticket. <strong>If you can't complete a step, that's usually your escalation signal.</strong></p>
+      <ol>
+        <li><strong>Confirm ownership</strong> — not a K0002/K0003 bug (Backline), confirmed prohibited content (Compliance), or ported/released TFN (Activations).</li>
+        <li><strong>Check the ticket arrived complete</strong> — rejection code, coaching done, why unresolved. If missing, return to Frontline.</li>
+        <li><strong>Find the real reason</strong> — staffside Number Status / Provider Error Code; if generic, subaccount Review information (Workflow 6A).</li>
+        <li><strong>Verify the subaccount</strong> — KA matches the ticket.</li>
+        <li><strong>Apply the matching fix</strong> from the Quick Reference — reset score / coach + resubmit / manual resubmit / unstick.</li>
+        <li><strong>Apply the macro</strong> from the Quick Reference and tag <code>tfv_false_positive</code> where applicable.</li>
+        <li><strong>Tell the customer</strong> what you did and what to watch for; "typically 2–5 business days."</li>
+        <li><strong>Confirm the outcome</strong> before closing. If it rejects again, escalate with your findings.</li>
+      </ol>
+      <div class="callout tip"><strong>Quick Reference is always one click away</strong>Use the <em>Quick Reference</em> button in the sidebar to open the 12-row rejection table while working a live ticket — match the rejection, apply the primary fix and macro, and escalate only per the last column.</div>
+    `}
+  ],
+  quiz:[
+    {q:"What's the first step on every live TFV ticket?", opts:["Open the Twilio subaccount","Confirm ownership — is this even a Pod ticket?","Apply a macro","Message the customer"], a:1, ex:"Step 1: confirm it's not a Backline bug (K0002/K0003), confirmed prohibited content (Compliance), or ported/released TFN (Activations)."},
+    {q:"The in-app rejection just says “There was an error processing your registration.” Where do you find the real reason?", opts:["Ask the customer","Twilio subaccount → Review information (Workflow 6A)","Resubmit and see what happens","The Klaviyo status page"], a:1, ex:"Generic in-app reasons require a subaccount review — the actual error lives in Twilio's Review information."},
+    {q:"A Frontline escalation arrives missing the rejection code and coaching notes. What do you do?", opts:["Work it anyway","Escalate to Compliance","Return it to Frontline","Close it"], a:2, ex:"Checklist step 2: if the ticket didn't arrive complete, return it to Frontline."},
+    {q:"When can you close the ticket?", opts:["Right after resubmitting","Once the macro is applied","After confirming the outcome","After 7 days regardless"], a:2, ex:"Confirm the outcome before closing. If it rejects again, escalate with your findings."}
+  ]
+},
+{
+  id:"m4", title:"Module 4 — Coaching a clean submission", short:"Clean submission",
+  blurb:"What every field of a passing TFV submission looks like — your script when coaching customers.",
+  lessons:[
+    {id:"m4l1", title:"The five fields that pass", html:`
+      <p>Use this when walking a customer through corrections, <strong>regardless of rejection type</strong>:</p>
+      <h3>Name</h3>
+      <p>First + last of a <strong>real person</strong> — not the company name or a placeholder.</p>
+      <h3>Email</h3>
+      <ul>
+        <li><strong>Best:</strong> a personal business email on the official business domain (e.g. <code>name@yourbusiness.com</code>).</li>
+        <li><strong>Next best:</strong> role address on the business domain (<code>support@yourbusiness.com</code>).</li>
+        <li><strong>Most rejected:</strong> free personal address (<code>@gmail.com</code>, <code>@yahoo.com</code>).</li>
+      </ul>
+      <div class="callout tip"><strong>If a free email is all they have</strong>Have them list it on the website before resubmitting — it adds legitimacy. The website must clearly identify the same business and contact info.</div>
+      <h3>Phone</h3>
+      <p>A public business number; personal cell or office numbers are acceptable. <strong>It will NOT be called or verified</strong> — reassure customers who ask. Registration record only.</p>
+      <h3>Address</h3>
+      <p>Valid legitimate business address (home is fine if that's the business standard); must <strong>match any public address on the website</strong>.</p>
+      <h3>BRN details (non-Sole-Proprietor)</h3>
+      <p>Exact-match legal entity name, registration type, registration number, issuing country — covered in depth in Workflow 6D.</p>
+    `}
+  ],
+  quiz:[
+    {q:"Which email is most likely to pass verification?", opts:["info@gmail.com","jane@yourbusiness.com","sales-team@yahoo.com","A blank email field"], a:1, ex:"A personal business email on the official business domain is best; free addresses are most rejected."},
+    {q:"The customer only has a @gmail address. What's the move?", opts:["Tell them they can't verify","Submit it and hope","Have them list it on their website first, then resubmit","Use a Klaviyo email instead"], a:2, ex:"Listing the free email on the website adds legitimacy before resubmitting."},
+    {q:"A customer is nervous about listing their phone number. What do you tell them?", opts:["Twilio will call once to verify","It will NOT be called or verified — registration record only","It must be a toll-free number","It gets published publicly"], a:1, ex:"The phone is a registration record only; it will not be called or verified."},
+    {q:"What should the Name field contain?", opts:["The company's legal name","The DBA","First + last name of a real person","“TFV Submission”"], a:2, ex:"A real person's first and last name — not the company name or a placeholder."}
+  ]
+},
+{
+  id:"m5", title:"Module 5 — Step-by-step workflows (6A–6H)", short:"Workflows 6A–6H",
+  blurb:"The eight Pod workflows: find the real reason, fix it, resubmit, or unstick.",
+  lessons:[
+    {id:"m5l0", title:"Which workflow do I need?", html:`
+      <table>
+        <tr><th>Situation</th><th>Workflow</th></tr>
+        <tr><td>Generic in-app rejection — find the real reason in Twilio</td><td><strong>6A</strong></td></tr>
+        <tr><td>K0001 false positive — reset content score</td><td><strong>6B</strong></td></tr>
+        <tr><td>"Unable to verify" — coach corrected business/contact info</td><td><strong>6C</strong></td></tr>
+        <tr><td>Business registration (BRN/EIN) issues</td><td><strong>6D</strong></td></tr>
+        <tr><td>Age-gate rejections (age_gate_required)</td><td><strong>6E</strong></td></tr>
+        <tr><td>Stuck / "in-progress" verification</td><td><strong>6F</strong></td></tr>
+        <tr><td>Manual submission through Twilio</td><td><strong>6G</strong></td></tr>
+        <tr><td>Status won't update / Twilio-Klaviyo out of sync</td><td><strong>6H</strong></td></tr>
+      </table>
+    `},
+    {id:"m5l1", title:"6A — Find the real rejection reason", html:`
+      <p>The in-app reason is often the generic <em>"There was an error processing your registration. Try registering again or contact support."</em> The actual reason lives in Twilio.</p>
+      ${IMG("inapp_rejection","In-app: the generic “error processing your registration” rejection")}
+      <ol>
+        <li><strong>Twilio Console</strong> → search the subaccount by <strong>KA</strong> (account ID).</li>
+        <li><strong>Develop → Phone Numbers → Active Numbers</strong>.</li>
+        <li>Click the number's <strong>Toll-free verification required</strong> flag.</li>
+        <li>Open <strong>Review information</strong> to see the specific error code and reason.</li>
+        <li>Compare against what the customer actually submitted and confirm which field is wrong.</li>
+      </ol>
+      ${IMG("configure_tab","Configure tab — “Messaging traffic is restricted… Review information”")}
+      ${IMG("review_info","Review information reveals the real error (here, a business-registration error)")}
+      <p>Branch to the matching workflow. If you'll resubmit in the console, use <strong>6G (Manual submission)</strong>.</p>
+      <div class="callout info"><strong>Video walkthrough</strong><a href="https://drive.google.com/file/d/1-_yxa51rhocs4tkv0lCaLWdcn6koV-5g/view?usp=sharing" target="_blank">Twilio Console BRN Review.mov</a> — rejection reason detail.</div>
+    `},
+    {id:"m5l2", title:"6B — K0001 false positive: reset the content score", html:`
+      <p><strong>K0001</strong> = Klaviyo's automated content scan flagged the site as prohibited when it isn't, or assigned an Unknown/Empty score (often a crawl failure). Common innocent triggers: "hemp seed" in a recipe, "elixir" in skincare, "cocktail pairings" on a non-alcoholic site. Use the <code>tfv_false_positive</code> Zendesk tag.</p>
+      <ol>
+        <li><strong>Open the customer's website and review it yourself.</strong> Confirm it is (a) live, (b) not password-protected, (c) more than a single placeholder landing page, and (d) free of prohibited content — SHAFT and non-SHAFT categories alike.</li>
+        <li><strong>Actual prohibited content / AUP violation found</strong> → stop; escalate to Compliance. Not a false positive.</li>
+        <li><strong>Site not live / password-protected / bare landing page</strong> → coach the customer to publish/complete the site and resubmit once live. No score change.</li>
+        <li><strong>Site compliant</strong> → reset the score to None: <a href="https://www.klaviyo.com/staff/mobile/prohibited-content-recategorization" target="_blank">prohibited-content recategorization tool</a>.</li>
+        <li>Customer resubmits via <strong>Register</strong> in SMS settings — the content model re-runs on every resubmission, so a true false positive should now pass to Twilio.</li>
+        <li>Rejects again after the reset → manually submit for them (6G1).</li>
+      </ol>
+    `},
+    {id:"m5l3", title:"6C — “Unable to verify”: coach corrected info", html:`
+      <p>These rejections — <strong>invalid/mismatched name, address, email, phone, or "could not verify business"</strong> — are a data-quality problem. The fix is correct, consistent submission info.</p>
+      <ol>
+        <li>Use the coaching reference (Module 4) to walk the customer through each field.</li>
+        <li>Customer resubmits via Text message settings → <strong>Register</strong>.</li>
+        <li><strong>High-MRR or stuck in a loop?</strong> Do the manual submission (6G1) instead of another round-trip.</li>
+      </ol>
+    `},
+    {id:"m5l4", title:"6D — Business registration (BRN) issues", html:`
+      <p><strong>BRN</strong> = Business Registration Number, a catch-all for all registration number types: <strong>FEIN/EIN</strong> (US Federal Employer ID), <strong>BN</strong> (Canada Revenue Agency), <strong>CRN</strong> (UK Companies House), <strong>SIREN</strong> (France, INSEE).</p>
+      <p>Required for all business types except <strong>Sole Proprietor</strong> — with one caveat: a sole proprietor with an <strong>EIN</strong> should select <strong>Private Company</strong> as the business type and submit the EIN as the registration number. When required, fields must match the official record <strong>exactly</strong>: legal entity name (tied to the number), registration type, registration number, issuing country.</p>
+      <div class="callout warn"><strong>Most common failure: a DBA submitted as the legal name</strong>ACME Inc, BRN 99-1234567, DBA "Acme" — submitting "Acme" is rejected because it doesn't exactly match the BRN record.</div>
+      <ol>
+        <li>Request official registration documentation if needed — <strong>CP-575</strong> or <strong>SS-4</strong> for the EIN, or <strong>Schedule C (Form 1040)</strong> for a sole proprietor with an EIN (shows name + EIN, so it works as proof of name/type/EIN).</li>
+        <li>Advise the customer to review, update, and resubmit — or correct the fields yourself in a manual resubmission (6G1).</li>
+        <li><strong>Number and brand name genuinely match the record but the BRN still rejects</strong> → provider-side issue → escalate to Activations with your findings.</li>
+      </ol>
+    `},
+    {id:"m5l5", title:"6E — Age-gate rejections", html:`
+      <p>Permitted age-restricted categories require date-of-birth age-gating before TFV will pass. The carrier standard — and Klaviyo's — is a <strong>DOB collection step, not a yes/no confirmation</strong>.</p>
+      <ol>
+        <li><strong>Review the site's age gate.</strong> A compliant gate collects <strong>date of birth</strong>; a simple "Are you over 21? Yes/No" form is <strong>NOT compliant</strong>.</li>
+        <li><strong>Compliant gate present</strong> → have the customer resubmit via Register.</li>
+        <li><strong>No gate / non-compliant gate</strong> → coach the customer to set up <strong>Klaviyo's age-gate form</strong> — third-party age-gate tools are not accepted — then resubmit.</li>
+        <li><strong>Customer pushback on the requirement</strong> → escalate to Compliance.</li>
+      </ol>
+      <div class="callout warn"><strong>Side effects to set expectations on</strong>
+        <ul style="margin:6px 0 0 18px">
+          <li>Age-gated accounts can't use opt-in keywords (custom keywords, YES/Y) for consent collection — DOB must be collected via a compliant method (form, CSV import).</li>
+          <li>TFN re-subscription still requires UNSTOP/START at the carrier level.</li>
+        </ul>
+      </div>
+    `},
+    {id:"m5l6", title:"6F — Stuck / “in-progress” verification", html:`
+      <p>Normal in-progress window is ~1–3 business days (full verification 2–5). In-progress <strong>more than 7 business days = stuck</strong>.</p>
+      ${IMG("reg_info_progress","Regulatory Information tab — verification in progress")}
+      <ol>
+        <li><strong>Twilio Console</strong> → subaccount → Develop → Phone Numbers → Active Numbers → check status.</li>
+        <li>Stuck &gt;7 business days → <strong>delete the verification</strong> in Twilio.</li>
+        <li>Staffside <strong>Mobile tab → Sync Verification</strong> to update the account status (may require an Activations escalation to re-sync).</li>
+        <li>Once synced, the customer resubmits via <strong>Register</strong>.</li>
+      </ol>
+      ${IMG("staffside_mobile","Staffside Mobile tab — Release Number and Sync Verification actions")}
+      <p><strong>If the status won't update after a sync → Workflow 6H.</strong></p>
+    `},
+    {id:"m5l7", title:"6G — Manual submission through Twilio", html:`
+      <p>Use for <strong>high-MRR accounts, escalated customers, or anyone stuck in a rejection loop</strong>.</p>
+      <p><strong>Navigate:</strong> Twilio subaccount → Develop → Phone Numbers → Active Numbers → click the <strong>Toll-free verification required</strong> flag.</p>
+      ${IMG("active_numbers","Active Numbers — the Toll-free verification required entry point")}
+      <h3>6G1 — Resubmitting a rejected submission</h3>
+      <p>Previously submitted info <strong>auto-populates</strong> — double-check every field with the customer before sending.</p>
+      <h4>Step 1 — Business &amp; contact info</h4>
+      <p>Verify against the BRN rules (6D). Sole Proprietor needs no BRN — but with an EIN, select Private Company and submit the EIN. All other types: exact-match registration details.</p>
+      ${IMG("step1","Step 1/3 — Business and contact information (auto-populated on resubmission)")}
+      <h4>Step 2 — Business location</h4>
+      <p>Must match the registered business info.</p>
+      ${IMG("step2","Step 2/3 — Business location")}
+      <h4>Step 3 — Messaging use case</h4>
+      <p>Ignore optional fields, fill the required ones, check "I agree to the Terms of Service," and submit:</p>
+      <table>
+        <tr><th>Field</th><th>Value</th></tr>
+        <tr><td>Estimated monthly volume</td><td>1000</td></tr>
+        <tr><td>Opt-in type</td><td>Web Form</td></tr>
+        <tr><td>Messaging use case categories</td><td>Marketing</td></tr>
+        <tr><td>Proof of consent (opt-in) collected</td><td>SMS Opt-In Forms link</td></tr>
+        <tr><td>Use case description</td><td>Product Announcements, Sales and Deals, Welcome Series, and Abandoned Cart</td></tr>
+        <tr><td>Sample message</td><td>[Account name]: Check out these deals! Text STOP to opt-out.</td></tr>
+        <tr><td>Email for notifications</td><td>Leave blank or no-reply@klaviyo.com</td></tr>
+      </table>
+      ${IMG("step3_form","Step 3/3 — Messaging use case: fill the required fields, agree to the Terms of Service, then Send information for verification")}
+      <div class="callout tip"><strong>Always use the Additional information field</strong>Tell Twilio's review team this is a manual resubmission by Klaviyo, plus anything that helps (privacy policy / AUP links, onboarding controls, why a Sole Proprietor needs no BRN, etc.). 500-character limit.</div>
+      ${IMG("additional_info","Additional information field — add a note to Twilio's reviewers")}
+      <h3>6G2 — New submission: released or ported-in TFN (Activations scope — for reference)</h3>
+      <p>Used when recovering a released TFN or submitting for a ported-in number. <strong>Per routing, this work goes to Activations</strong> — included so you recognize it and hand off. Differences from 6G1: pull first/last name + email from account users; use the website's public address, or the staffside account address if none is public; you may first be asked to select a business profile. Same 3-step workflow as 6G1.</p>
+      ${IMG("biz_profile","Business profile selection (shown for some new submissions)")}
+    `},
+    {id:"m5l8", title:"6H — Status won't update / out of sync", html:`
+      <p>If the verification status in Twilio differs from what Klaviyo shows, the backend connection is out of sync. <strong>Sync Verification</strong> (staffside Mobile tab) forces the Twilio status to update to Klaviyo.</p>
+      <div class="callout danger"><strong>If Sync Verification doesn't update the status, it's a bug</strong>Open a Linear ticket → assign to SMS Delivery → once resolved, instruct the customer to resubmit.</div>
+      <h3>Release-and-replace (urgent / high MRR)</h3>
+      <p>For urgent requests from high-MRR customers, unblock faster by offering a release-and-replace:</p>
+      <ul>
+        <li><strong>Option 1 — customer-resolved:</strong> instruct the customer to release the TFN, wait 24 hours, request a new TFN, and resubmit verification. Use when the customer isn't urgent and hasn't reported multiple rejections.</li>
+        <li><strong>Option 2 — PE-resolved:</strong> from the account's Mobile tab → Actions → Release Number, then ask the customer to request a new TFN (they'll be prompted back through registration). Use for high-MRR urgent requests or escalated customers with multiple rejections.</li>
+      </ul>
+      <div class="callout warn"><strong>Know these two platform behaviors before advising a release</strong>
+        <ul style="margin:6px 0 0 18px">
+          <li><strong>US/CA TFN is one number.</strong> Releasing the US TFN releases the CA TFN too (and vice versa) — warn the customer both regions are affected.</li>
+          <li><strong>24-hour add limit.</strong> After adding a TFN, the account can't add another for 24 hours — even after releasing. This is why Option 1 includes the wait.</li>
+        </ul>
+      </div>
+    `}
+  ],
+  quiz:[
+    {q:"A K0001 rejection, and your own review finds the site live and fully compliant. What do you do?", opts:["Escalate to Compliance","Reset the content score to None via the recategorization tool, then have the customer re-Register","Delete the verification in Twilio","Release the number"], a:1, ex:"Compliant site = false positive. Reset to None; the content model re-runs on resubmission. Tag tfv_false_positive."},
+    {q:"During a K0001 review you find the site actually sells cannabis products. Next step?", opts:["Reset the score anyway","Coach an age gate","Stop and escalate to Compliance","Manual resubmission"], a:2, ex:"Real prohibited content is never a false positive — Compliance owns the determination."},
+    {q:"ACME Inc (BRN 99-1234567) submitted “Acme” — their DBA — as the legal name and was rejected. Why?", opts:["DBAs need a separate BRN","The legal entity name must exactly match the BRN record","Sole proprietors can't have DBAs","The BRN is invalid"], a:1, ex:"The most common BRN failure: a DBA submitted as the legal name. Fields must exact-match the official record."},
+    {q:"Which age gate is compliant?", opts:["“Are you over 21? Yes/No”","A date-of-birth collection step via Klaviyo's age-gate form","Any third-party age-gate tool","A checkbox in the footer"], a:1, ex:"A compliant gate collects DOB; yes/no forms and third-party tools are not accepted."},
+    {q:"A verification has been “in-progress” for 9 business days. What's the play?", opts:["Wait — it can take up to 15","Delete the verification in Twilio → Sync Verification in staffside → customer re-Registers","Open a Linear ticket immediately","Release the number"], a:1, ex:">7 business days = stuck. Delete in Twilio, sync in staffside, re-Register (6F)."},
+    {q:"What must always go in the Additional information field on a manual resubmission?", opts:["The customer's MRR","A note that this is a manual resubmission by Klaviyo","The KA number","Nothing — leave it blank"], a:1, ex:"Always tell Twilio's reviewers it's a Klaviyo manual resubmission, plus any helpful context. 500-char limit."},
+    {q:"Before advising a customer to release their US TFN, you must warn them that…", opts:["it costs $75","their CA TFN is released too, and a 24-hour add limit applies","they lose their subscriber list","verification restarts at 30 days"], a:1, ex:"US/CA TFN is one number, and after adding a TFN the account can't add another for 24 hours."},
+    {q:"Sync Verification doesn't update the status. What now?", opts:["Try Register again repeatedly","Open a Linear ticket → assign to SMS Delivery","Escalate to Compliance","Delete the messaging service"], a:1, ex:"A failed sync is a bug: Linear ticket to SMS Delivery; once resolved, the customer resubmits."}
+  ]
+},
+{
+  id:"m6", title:"Module 6 — Rejection codes & sending impact", short:"Codes & sending",
+  blurb:"How to route from a code alone, and what “not verified” means for the customer's sending.",
+  lessons:[
+    {id:"m6l1", title:"Klaviyo content-scan codes (K-codes)", html:`
+      <p>K-codes are Klaviyo-side (staffside); the customer can resubmit immediately via Register.</p>
+      <table>
+        <tr><th>Code</th><th>Meaning</th><th>Action</th></tr>
+        <tr><td><code>K0001</code></td><td>Content score: prohibited content detected, or Unknown/Empty score</td><td>Pod: review site → reset score if compliant false positive (6B); Compliance if real prohibited content</td></tr>
+        <tr><td><code>K0002</code></td><td>Non-retryable, non-duplicate error from the TFV create API (catch-all)</td><td>Backline — bug path (Feb 2026 fix should have resolved instances)</td></tr>
+        <tr><td><code>K0003</code></td><td>Duplicate submission caused by a bug</td><td>Backline — bug path (Feb 2026 fix should have resolved instances)</td></tr>
+      </table>
+    `},
+    {id:"m6l2", title:"Routing from a Twilio code", html:`
+      <p>Twilio codes group into seven resolution paths. Learn the categories — then use the <strong>Error Code Lookup</strong> (sidebar button) for any specific code.</p>
+      <table>
+        <tr><th>Category</th><th>Resolution path</th></tr>
+        <tr><td>Prohibited content — SHAFT (30441–30459)</td><td>Review site (6B); verified → <strong>Compliance</strong>. Exception: alcohol (30456) is resolvable via a compliant age gate (6E).</td></tr>
+        <tr><td>Prohibited / non-supported use cases (spam, loans, fraud, gambling, crypto…)</td><td>Review site (6B); verified → <strong>Compliance</strong>. A few route direct (deceptive marketing, phishing, fraud risk).</td></tr>
+        <tr><td>Age gating (30448, 30512, 30529)</td><td><strong>6E</strong> — compliant DOB gate, resubmit</td></tr>
+        <tr><td>Business / contact information</td><td><strong>6C–6D</strong> — coach corrected info / exact-match BRN</td></tr>
+        <tr><td>Website quality &amp; URLs</td><td>Coach + resubmit — live site, branding, no login walls, HTTPS, no shorteners</td></tr>
+        <tr><td>Opt-in / consent workflow</td><td>Coach + resubmit — fix consent flow, privacy policy, disclosures</td></tr>
+        <tr><td>Policies, content &amp; use-case alignment</td><td>Coach + resubmit; non-profit (30487) needs docs + manual resubmit; political (30501/30502) → Activations</td></tr>
+      </table>
+      <div class="callout warn"><strong>Always confirm the code first</strong>Known conflicting mappings exist between older docs — confirm against the live <a href="https://docs.google.com/spreadsheets/d/1E-aPL5CqGk8PBQgJFcttn18vj_ZUrXaqlXpSdFrylDQ/edit?gid=2134931306#gid=2134931306" target="_blank">Error Code Map</a> before quoting a code to a customer or routing on it.</div>
+    `},
+    {id:"m6l3", title:"What “not verified” means for sending", html:`
+      <p>Messages from any unverified TFN are <strong>blocked</strong> — only fully verified TFNs can send to the US and Canada. Use this when a customer asks why messages aren't going out during or after verification:</p>
+      <ul>
+        <li><strong>Error 30032</strong> — blocked send from an <strong>unverified</strong> TFN.</li>
+        <li><strong>Error 30007</strong> — spam/unwanted filtering on a <strong>verified</strong> TFN.</li>
+      </ul>
+      <p>Carrier filtering is still possible on verified TFNs; compliance with best practices reduces it.</p>
+    `},
+    {id:"m6l4", title:"Resources", html:`
+      <ul>
+        <li><a href="https://klaviyo.atlassian.net/wiki/spaces/COM/pages/3052241188/Navigating+Twilio+Console" target="_blank">Navigating Twilio Console</a></li>
+        <li><a href="https://klaviyo.atlassian.net/wiki/spaces/COM/pages/3891658824/How+to+Recover+a+Released+TFN" target="_blank">How to Recover a Released TFN</a></li>
+        <li><a href="https://klaviyo.atlassian.net/wiki/spaces/COM/pages/4197318970/How+to+Troubleshoot+Toll-free+Verifications" target="_blank">Activations: How to Troubleshoot Toll-free Verifications</a></li>
+        <li><a href="https://klaviyo-internal-kb.zendesk.com/hc/en-us/articles/15501753381275-Troubleshooting-and-FAQ-Text-Messaging" target="_blank">KB: Troubleshooting and FAQ — Text Messaging</a></li>
+        <li><a href="https://www.klaviyo.com/staff/mobile/prohibited-content-recategorization" target="_blank">Prohibited-content recategorization tool</a></li>
+        <li><a href="https://docs.google.com/spreadsheets/d/1E-aPL5CqGk8PBQgJFcttn18vj_ZUrXaqlXpSdFrylDQ/edit?gid=2134931306#gid=2134931306" target="_blank">Full Error Code Map (Twilio error codes)</a></li>
+      </ul>
+    `}
+  ],
+  quiz:[
+    {q:"A customer's sends fail with Error 30032. What does that mean?", opts:["Spam filtering on a verified TFN","The TFN is unverified — sends are blocked","A duplicate submission","An age-gate violation"], a:1, ex:"30032 = unverified TFN. 30007 = spam/unwanted filtering on a verified TFN."},
+    {q:"Code 30456 (SHAFT — Alcohol) appears. Unlike other SHAFT codes, this one…", opts:["always goes to Compliance","is resolvable via a compliant age gate (6E)","is a Backline bug","requires releasing the number"], a:1, ex:"Alcohol is a permitted age-restricted category — a compliant DOB age gate can resolve it; pushback goes to Compliance."},
+    {q:"Before quoting any Twilio error code to a customer, you should…", opts:["check it against the live Error Code Map","memorize the full list","ask Backline","convert it to a K-code"], a:0, ex:"Known conflicting mappings exist between older docs — the live Error Code Map is the source of truth."},
+    {q:"Code K0002 appears on a ticket. Route to…", opts:["D&C Pod","Compliance","Backline (bug path)","Activations"], a:2, ex:"K0002 and K0003 are bug-path codes owned by Backline."}
+  ]
+},
+];
+/* Error code lookup data — verified against the Error Code Map (Jun 2026). Sheet remains source of truth. */
+const CODES = [
+ ["K0001","Klaviyo content score: prohibited content detected, or Unknown/Empty score","Pod review site → reset if false positive (6B); Compliance if real","pod","Klaviyo"],
+ ["K0002","Non-retryable, non-duplicate error from the TFV create API (catch-all)","Backline — bug path","backline","Klaviyo"],
+ ["K0003","Duplicate submission caused by a bug","Backline — bug path","backline","Klaviyo"],
+ ["30441","Disallowed: SHAFT — Sex","Review site (6B); verified → Compliance","compliance","SHAFT"],
+ ["30455","Disallowed: SHAFT — Hate","Review site (6B); verified → Compliance","compliance","SHAFT"],
+ ["30456","Disallowed: SHAFT — Alcohol","Resolvable via compliant age gate (6E); pushback → Compliance","coach","SHAFT"],
+ ["30457","Disallowed: SHAFT — Firearms","Review site (6B); verified → Compliance","compliance","SHAFT"],
+ ["30458","Disallowed: SHAFT — Tobacco / Vape","Review site (6B); verified → Compliance","compliance","SHAFT"],
+ ["30459","Disallowed: Cannabis / CBD","Review site (6B); verified → Compliance","compliance","SHAFT"],
+ ["30442","Disallowed: Spam","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30443","Disallowed: Loan Marketing","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30444","Disallowed: Fraud","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30460","Disallowed: Third-Party Debt Collection","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30461","Disallowed: Gambling","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30462","Disallowed: Sweepstakes","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30463","Disallowed: Stock Alerts / Platforms","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30464","Disallowed: Cryptocurrency","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30465","Disallowed: Risk Investment / Get-Rich-Quick","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30466","Disallowed: Debt Reduction","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30467","Disallowed: Credit Repair","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30468","Disallowed: Third-Party Lead Generation","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30469","Disallowed: Illegal substances / articles","Review site (6B); verified → Compliance","compliance","Prohibited use case"],
+ ["30470","High Risk: Deceptive Marketing","Direct → Compliance","compliance","Prohibited use case"],
+ ["30480","Disallowed: Phishing","Direct → Compliance","compliance","Prohibited use case"],
+ ["30524","Potential fraud risk","Direct → Compliance","compliance","Prohibited use case"],
+ ["30528","Disallowed: Non-federally compliant use case","Direct → Compliance","compliance","Prohibited use case"],
+ ["30448","Age gate required for content","6E — compliant DOB gate, resubmit","coach","Age gating"],
+ ["30512","Age verification required (age-restricted content)","6E","coach","Age gating"],
+ ["30529","Alcohol promotions without age verification","6E (see also 30456)","coach","Age gating"],
+ ["30445","Could not validate business information","6C coaching reference","coach","Business info"],
+ ["30451","Business address invalid","6C — full, accurate address","coach","Business info"],
+ ["30452","Business email invalid","6C — business-domain email","coach","Business info"],
+ ["30472","Could not verify business exists","6C — align site/email/phone/address","coach","Business info"],
+ ["30473","Cannot validate business website URL","6C; site must be live + matching","coach","Business info"],
+ ["30482","Business email requires official domain","6C — confirms the domain rule","coach","Business info"],
+ ["30483","Contact must be an official business representative","6C — real person with authority","coach","Business info"],
+ ["30484","Business name doesn't match official registration records","6D — exact-match legal name","coach","Business info"],
+ ["30488","DBA name must accurately represent the business","6D — DBA vs legal-name rules","coach","Business info"],
+ ["30527","Business registration number invalid or missing","6D — BRN/EIN; collect CP-575 / SS-4 / Schedule C","coach","Business info"],
+ ["30474","End business required","6D; Activations if reseller/ISV context","coach","Business info"],
+ ["30478","Single number used for multiple businesses","6C; escalate Pod if structural","coach","Business info"],
+ ["30479","Justification needed for >5 toll-free numbers","Pod → Activations","activations","Business info"],
+ ["30494","ISV / reseller company name required","Pod → Activations","activations","Business info"],
+ ["30489","Website must be established, active, functional","Publish/complete site → re-Register","coach","Website & URLs"],
+ ["30490","Social platform must be established and active","Same, for social-only businesses","coach","Website & URLs"],
+ ["30491","Website password-protected or requires login","Remove gate → re-Register","coach","Website & URLs"],
+ ["30492","Website must display business branding","Add branding → re-Register","coach","Website & URLs"],
+ ["30449","URL issues in sample message","Fix sample-message URLs → resubmit","coach","Website & URLs"],
+ ["30471","Non-secured (HTTP) URL in sample message","Use HTTPS → resubmit","coach","Website & URLs"],
+ ["30525","Public URL shorteners (bit.ly etc.) not allowed","Remove shorteners → resubmit","coach","Website & URLs"],
+ ["30523","High-risk domain reputation","Pod review → Activations if persistent","pod","Website & URLs"],
+ ["30526","High-risk domain issues","Pod review → Activations if persistent","pod","Website & URLs"],
+ ["30446","Express written consent required for use case","Fix opt-in flow → resubmit","coach","Opt-in / consent"],
+ ["30475","Consent cannot be conditional on service","Fix opt-in flow → resubmit","coach","Opt-in / consent"],
+ ["30476","No opt-in method provided","Provide proof of consent → resubmit","coach","Opt-in / consent"],
+ ["30477","Opt-in data shared with third parties","Update privacy policy + opt-in → resubmit","coach","Opt-in / consent"],
+ ["30520","Opt-in data shared with third parties","Update privacy policy + opt-in → resubmit","coach","Opt-in / consent"],
+ ["30521","Privacy policy allows sharing","Update privacy policy + opt-in → resubmit","coach","Opt-in / consent"],
+ ["30498","Opt-in workflow doesn't match description","Align submission with actual flow → resubmit","coach","Opt-in / consent"],
+ ["30507","Opt-in workflow doesn't match use case","Align submission with actual flow → resubmit","coach","Opt-in / consent"],
+ ["30504","Single opt-in cannot cover multiple use cases","Split or narrow use case → resubmit","coach","Opt-in / consent"],
+ ["30505","Opt-in must be optional (not tied to purchase)","Fix checkout consent → resubmit","coach","Opt-in / consent"],
+ ["30506","Opt-in must reflect the end business","Brand the opt-in → resubmit","coach","Opt-in / consent"],
+ ["30508","Pre-selected opt-in checkbox not allowed","Uncheck by default → resubmit","coach","Opt-in / consent"],
+ ["30509","Opt-in URL not accessible","Fix the proof-of-consent link → resubmit","coach","Opt-in / consent"],
+ ["30510","Opt-in example incomplete or unbranded","Complete, branded example → resubmit","coach","Opt-in / consent"],
+ ["30511","Verbal consent script required (phone opt-ins)","Provide script → resubmit","coach","Opt-in / consent"],
+ ["30513","Opt-in language unclear","Fix per friendly message → resubmit","coach","Opt-in / consent"],
+ ["30515","Valid opt-in required","Fix per friendly message → resubmit","coach","Opt-in / consent"],
+ ["30516","Double opt-in required","Fix per friendly message → resubmit","coach","Opt-in / consent"],
+ ["30518","Call-to-action missing required disclosures","Add freq., HELP/STOP, rates → resubmit","coach","Opt-in / consent"],
+ ["30493","Privacy policy or terms missing / inaccessible","Publish + link → resubmit","coach","Policies & alignment"],
+ ["30519","Privacy policy or terms required","Publish + link → resubmit","coach","Policies & alignment"],
+ ["30522","SMS terms inaccessible or non-compliant","Fix Mobile TOS link → resubmit","coach","Policies & alignment"],
+ ["30486","HELP keyword response requirements not met","Fix HELP response → resubmit","coach","Policies & alignment"],
+ ["30495","Projected volume exceeds use-case limits","Adjust volume estimate → resubmit","coach","Policies & alignment"],
+ ["30496","Use case and summary inconsistent","Align fields → resubmit","coach","Policies & alignment"],
+ ["30499","Use case and message content inconsistent","Align fields → resubmit","coach","Policies & alignment"],
+ ["30503","Confirmation message missing key details","Add freq., HELP/STOP → resubmit","coach","Policies & alignment"],
+ ["30517","Shopping cart reminder guidelines violated","Fix abandoned-cart flow description → resubmit","coach","Policies & alignment"],
+ ["30487","501(c)(3) verification required (non-profits)","Collect docs → 6G1 manual resubmit","pod","Policies & alignment"],
+ ["30501","Campaign Verify token required (political)","Pod → Activations (political registration)","activations","Policies & alignment"],
+ ["30502","FEC ID required (political)","Pod → Activations (political registration)","activations","Policies & alignment"],
+ ["30437","Edit time expired","Resubmit fresh via account settings / 6G1","coach","Process / admin"],
+ ["30440","Unknown error","Subaccount review (6A); Backline if no detail","pod","Process / admin"],
+ ["30447","Number not provisioned to Twilio","Pod → Activations","activations","Process / admin"],
+ ["30032","Send blocked: TFN unverified (delivery error, not a rejection)","Complete TFV — only verified TFNs send to US/CA","pod","Delivery"],
+ ["30007","Spam/unwanted filtering on a verified TFN (delivery error)","Best-practice compliance reduces filtering","coach","Delivery"]
+];
+const PILL_LABEL = {compliance:"Compliance", coach:"Coach + resubmit", pod:"Pod", backline:"Backline", activations:"Activations"};
+/* Quick Reference — TFN rejection types */
+const QUICK_REF = [
+ ["1","Website not live / not viewable (“Unable to verify business”)","Publish/unlock site; customer re-Registers once live (not a bare landing page, no placeholder products)","Text Messaging::Send Numbers::TFN Verification Rejection::Website Inactive","Resub fails → D&C Pod"],
+ ["2","Prohibited content — SHAFT (Sex, Hate, Alcohol, Firearms, Tobacco; incl. Cannabis/CBD)","Review site yourself. Real SHAFT → Compliance. Looks clean → treat as K0001 false positive (row 5)","Text Messaging::Send Numbers::TFN Verification Rejection::SHAFT Content","Confirmed prohibited → Compliance"],
+ ["3","Prohibited content — non-SHAFT (loan marketing, third-party lead-gen/fraud, third-party debt collection)","Review site to confirm the category. Same path as SHAFT","—","Confirmed prohibited → Compliance"],
+ ["4","Age gate missing / not acceptable (age_gate_required)","Review site: compliant DOB age gate required — a simple yes/no form is NOT compliant. Set up Klaviyo age gate, then resubmit (6E)","—","Customer pushback on requirement → Compliance"],
+ ["5","K0001 — Klaviyo content score (false positive / Unknown / Empty)","Review site; if compliant, Pod resets score to None via recategorization tool → customer re-Registers (6B)","Zendesk tag: tfv_false_positive","Verified SHAFT found → Compliance"],
+ ["6","Invalid business email","person@branddomain — business domain beats free email; list free email on site if it's all they have → re-Register (6C)","Text Messaging::Send Numbers::TFN Verification Rejection::Invalid Business Email","Resub fails → D&C Pod"],
+ ["7","Invalid business address","Full, accurate business address matching the website → re-Register","Text Messaging::Send Numbers::TFN Verification Rejection::Invalid Business Address","Resub fails → D&C Pod"],
+ ["8","Invalid business phone","Working public business number (it will NOT be called or verified) → re-Register","Text Messaging::Send Numbers::TFN Verification Rejection::Invalid Phone Number","Resub fails → D&C Pod"],
+ ["9","Business info not valid / cannot verify business / BRN mismatch","Align website, email, phone, address, and exact-match BRN details → re-Register (6C–6D)","Text Messaging::Send Numbers::TFN Verification Rejection::Cannot Verify Business","Resub fails → D&C Pod; BRN matches but still rejects → Activations"],
+ ["10","K0002 / K0003 — processing error / duplicate-submission bug","General processing error; customer resubmits via Register","—","Always → Backline (bug log)"],
+ ["11","Stuck “in-progress” > 7 business days","Pod deletes verification in Twilio → Sync Verification in staffside → customer re-Registers (6F)","—","Status won't sync → 6H"],
+ ["12","Incomplete / ported-in or released TFN not yet submitted","Do not work at Frontline or Pod level","—","Directly → Activations"]
+];
+/* ============ APP LOGIC ============ */
+// Flatten lessons + quizzes into an ordered list of "pages"
+const PAGES = [{type:"home"}];
+MODULES.forEach(m=>{
+  m.lessons.forEach(l=>PAGES.push({type:"lesson", mod:m, lesson:l}));
+  PAGES.push({type:"quiz", mod:m});
+});
+PAGES.push({type:"finish"});
+
+let store = {};
+try{ store = JSON.parse(localStorage.getItem("tfv-training")||"{}"); }catch(e){ store = {}; }
+function save(){ try{ localStorage.setItem("tfv-training", JSON.stringify(store)); }catch(e){} }
+function pageKey(p){ return p.type==="lesson" ? p.lesson.id : p.type==="quiz" ? p.mod.id+"-quiz" : p.type; }
+function isDone(p){ return !!store[pageKey(p)]; }
+function markDone(p){ store[pageKey(p)]=true; save(); renderSidebar(); }
+
+let current = 0;
+const savedPos = parseInt(store["__pos__"]);
+if(!isNaN(savedPos) && savedPos>=0 && savedPos<PAGES.length) current = savedPos;
+
+function trackable(){ return PAGES.filter(p=>p.type==="lesson"||p.type==="quiz"); }
+function progressPct(){
+  const t = trackable();
+  return Math.round(100 * t.filter(isDone).length / t.length);
+}
+
+/* ---- Sidebar ---- */
+function renderSidebar(){
+  const sb = document.getElementById("sidebar");
+  let h = `<div class="brand"><h1>TFV Support Training</h1><p>Toll-Free Verification · Frontline &amp; D&amp;C Pod</p></div>`;
+  h += `<div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" style="width:${progressPct()}%"></div></div><div class="progress-label">${progressPct()}% complete</div></div>`;
+  h += `<button class="lesson-link" data-goto="0" style="font-weight:600">🏠 Home</button>`;
+  MODULES.forEach(m=>{
+    const open = PAGES[current].mod && PAGES[current].mod.id===m.id;
+    h += `<div class="mod-group ${open?"open":""}" id="grp-${m.id}">`;
+    h += `<button class="mod-title" data-toggle="${m.id}">${m.short}<span class="chev">▶</span></button>`;
+    h += `<div class="mod-lessons">`;
+    m.lessons.forEach(l=>{
+      const idx = PAGES.findIndex(p=>p.type==="lesson"&&p.lesson.id===l.id);
+      const active = current===idx;
+      h += `<button class="lesson-link ${active?"active":""}" data-goto="${idx}"><span class="dot ${store[l.id]?"done":""}">${store[l.id]?"✓":""}</span>${l.title}</button>`;
+    });
+    const qIdx = PAGES.findIndex(p=>p.type==="quiz"&&p.mod.id===m.id);
+    h += `<button class="lesson-link ${current===qIdx?"active":""}" data-goto="${qIdx}"><span class="dot ${store[m.id+"-quiz"]?"done":""}">${store[m.id+"-quiz"]?"✓":""}</span>📝 Knowledge check</button>`;
+    h += `</div></div>`;
+  });
+  h += `<div class="sidebar-actions">
+    <button class="qr-btn" id="open-qr">⚡ Quick Reference</button>
+    <button class="qr-btn codes" id="open-codes">🔍 Error Code Lookup</button>
+  </div>`;
+  sb.innerHTML = h;
+  sb.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click",()=>{ go(parseInt(b.dataset.goto)); document.getElementById("sidebar").classList.remove("open"); }));
+  sb.querySelectorAll("[data-toggle]").forEach(b=>b.addEventListener("click",()=>document.getElementById("grp-"+b.dataset.toggle).classList.toggle("open")));
+  document.getElementById("open-qr").addEventListener("click",()=>document.getElementById("qr-modal").classList.add("open"));
+  document.getElementById("open-codes").addEventListener("click",()=>{ document.getElementById("codes-modal").classList.add("open"); document.getElementById("code-search").focus(); });
+}
+
+/* ---- Content render ---- */
+function navButtons(p){
+  const last = current===PAGES.length-1;
+  const next = p.type==="lesson" ? "Mark complete &amp; continue →" : "Continue →";
+  return `<div class="lesson-nav">
+    <button class="nav-btn" id="prev-btn" ${current===0?"disabled":""}>← Back</button>
+    ${last?"":`<button class="nav-btn primary" id="next-btn">${next}</button>`}
+  </div>`;
+}
+function render(){
+  const p = PAGES[current];
+  const c = document.getElementById("content");
+  store["__pos__"]=current; save();
+  if(p.type==="home"){
+    let cards = MODULES.map((m,i)=>{
+      const total = m.lessons.length+1;
+      const done = m.lessons.filter(l=>store[l.id]).length + (store[m.id+"-quiz"]?1:0);
+      const idx = PAGES.findIndex(q=>q.type==="lesson"&&q.mod.id===m.id);
+      return `<button class="mod-card" data-goto="${idx}"><div class="num">Module ${i+1}</div><h3>${m.short}</h3><p>${m.blurb}</p><div class="stat">${done}/${total} complete</div></button>`;
+    }).join("");
+    c.innerHTML = `<div class="home-hero">
+      <h2>Toll-Free Verification — Support Training</h2>
+      <p>A guided walkthrough of the TFV Support Guide for Frontline Support and the D&amp;C Pod. Work through the six modules in order, pass each knowledge check, and use the <strong>Quick Reference</strong> and <strong>Error Code Lookup</strong> (sidebar) any time — including on live tickets after training.</p>
+      <button class="nav-btn primary" data-goto="1">${progressPct()>0?"Resume training →":"Start training →"}</button>
+    </div><div class="mod-cards">${cards}</div>`;
+    c.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click",()=>go(parseInt(b.dataset.goto))));
+  }
+  else if(p.type==="lesson"){
+    c.innerHTML = `<div class="crumb">${p.mod.title}</div><h2 class="lesson-h">${p.lesson.title}</h2><div class="lesson-body">${p.lesson.html}</div>${navButtons(p)}`;
+    wireNav(()=>{ markDone(p); go(current+1); });
+  }
+  else if(p.type==="quiz"){
+    let qs = p.mod.quiz.map((q,qi)=>`<div class="quiz-q" data-qi="${qi}"><div class="qtext">${qi+1}. ${q.q}</div>${q.opts.map((o,oi)=>`<button class="quiz-opt" data-oi="${oi}">${o}</button>`).join("")}<div class="quiz-explain">${q.ex}</div></div>`).join("");
+    c.innerHTML = `<div class="crumb">${p.mod.title}</div><h2 class="lesson-h">📝 Knowledge check</h2><div class="lesson-body"><p>Answer all ${p.mod.quiz.length} questions. You'll see the explanation after each answer.</p></div>${qs}<div class="quiz-score" id="quiz-score"></div>${navButtons(p)}`;
+    let answered = 0, correct = 0;
+    c.querySelectorAll(".quiz-q").forEach(qEl=>{
+      const q = p.mod.quiz[parseInt(qEl.dataset.qi)];
+      qEl.querySelectorAll(".quiz-opt").forEach(opt=>{
+        opt.addEventListener("click",()=>{
+          if(qEl.dataset.done) return;
+          qEl.dataset.done="1"; answered++;
+          const oi = parseInt(opt.dataset.oi);
+          if(oi===q.a){ correct++; opt.classList.add("correct"); }
+          else { opt.classList.add("wrong"); qEl.querySelectorAll(".quiz-opt")[q.a].classList.add("correct"); }
+          qEl.querySelector(".quiz-explain").style.display="block";
+          qEl.querySelectorAll(".quiz-opt").forEach(o=>o.disabled=true);
+          if(answered===p.mod.quiz.length){
+            const sc = document.getElementById("quiz-score");
+            sc.style.display="block";
+            sc.innerHTML = `You scored <strong>${correct}/${p.mod.quiz.length}</strong>. ${correct===p.mod.quiz.length?"Perfect — nice work! 🎉":correct>=Math.ceil(p.mod.quiz.length*0.6)?"Solid. Review anything you missed above.":"Worth revisiting this module before moving on."}`;
+            markDone(p);
+          }
+        });
+      });
+    });
+    wireNav(()=>go(current+1));
+  }
+  else if(p.type==="finish"){
+    const pct = progressPct();
+    c.innerHTML = `<div class="home-hero" style="text-align:center">
+      <h2>${pct===100?"🎉 Training complete":"Almost there"}</h2>
+      <p>${pct===100?"You've completed every lesson and knowledge check. Keep this page handy — the Quick Reference and Error Code Lookup work as live-ticket tools.":`You're at ${pct}%. Use the sidebar to finish the remaining lessons and knowledge checks.`}</p>
+      <button class="nav-btn primary" data-goto="0">Back to home</button>
+    </div>`;
+    c.querySelectorAll("[data-goto]").forEach(b=>b.addEventListener("click",()=>go(parseInt(b.dataset.goto))));
+  }
+  window.scrollTo(0,0);
+}
+function wireNav(onNext){
+  const prev = document.getElementById("prev-btn");
+  const next = document.getElementById("next-btn");
+  if(prev) prev.addEventListener("click",()=>go(current-1));
+  if(next) next.addEventListener("click",onNext);
+}
+function go(i){ current = Math.max(0, Math.min(PAGES.length-1, i)); renderSidebar(); render(); }
+
+/* ---- Quick Reference modal ---- */
+document.getElementById("qr-body").innerHTML =
+  `<p style="font-size:13px;color:var(--muted);margin-bottom:10px">Use this while working a live ticket. Match the rejection shown in-app or in staffside, apply the primary fix and macro, and escalate only per the last column.</p>
+  <table><tr><th>#</th><th>Rejection / friendly message</th><th>Primary fix</th><th>Macro</th><th>Escalate when</th></tr>` +
+  QUICK_REF.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td style="font-size:11.5px">${r[3]}</td><td>${r[4]}</td></tr>`).join("") + `</table>`;
+
+/* ---- Error code lookup ---- */
+function renderCodes(filter){
+  const f = (filter||"").toLowerCase().trim();
+  const rows = CODES.filter(c=>!f || c.join(" ").toLowerCase().includes(f) || PILL_LABEL[c[3]].toLowerCase().includes(f));
+  document.getElementById("codes-table").innerHTML =
+    `<table><tr><th>Code</th><th>Rejection reason</th><th>Resolution path</th><th>Route</th><th>Category</th></tr>` +
+    (rows.length ? rows.map(c=>`<tr><td><code>${c[0]}</code></td><td>${c[1]}</td><td>${c[2]}</td><td><span class="pill ${c[3]}">${PILL_LABEL[c[3]]}</span></td><td style="font-size:11.5px;color:var(--muted)">${c[4]}</td></tr>`).join("")
+      : `<tr><td colspan="5" style="text-align:center;color:var(--muted)">No matches — check the live Error Code Map.</td></tr>`) + `</table>`;
+}
+renderCodes("");
+document.getElementById("code-search").addEventListener("input",e=>renderCodes(e.target.value));
+
+/* ---- Modals & mobile ---- */
+document.querySelectorAll("[data-close]").forEach(b=>b.addEventListener("click",()=>document.getElementById(b.dataset.close).classList.remove("open")));
+document.querySelectorAll(".modal-bg").forEach(m=>m.addEventListener("click",e=>{ if(e.target===m) m.classList.remove("open"); }));
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") document.querySelectorAll(".modal-bg.open").forEach(m=>m.classList.remove("open")); });
+document.getElementById("menu-toggle").addEventListener("click",()=>document.getElementById("sidebar").classList.toggle("open"));
+
+renderSidebar();
+render();
+</script>
+</body>
+</html>
