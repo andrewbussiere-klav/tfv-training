@@ -174,11 +174,13 @@ const IMAGES = {
 };
 function imgFail(el){
   const fig = el.closest("figure");
-  const cap = fig.querySelector("figcaption").textContent;
+  const cap = el.getAttribute("alt") || "Screenshot";
   fig.outerHTML = SHOT(cap + " (image unavailable — check Drive folder access)");
 }
+/* Caption is kept as alt text only (for accessibility + fallback); it is NOT
+   rendered below the image, since the screenshots already contain that note. */
 const IMG = (key, caption) => IMAGES[key]
-  ? `<figure class="shot-img"><img src="${IMAGES[key]}" alt="${caption.replace(/"/g,"&quot;")}" loading="lazy" onerror="imgFail(this)"><figcaption>${caption}</figcaption></figure>`
+  ? `<figure class="shot-img"><img src="${IMAGES[key]}" alt="${caption.replace(/"/g,"&quot;")}" loading="lazy" onerror="imgFail(this)"></figure>`
   : SHOT(caption);
 
 const MODULES = [
@@ -399,7 +401,7 @@ const MODULES = [
     `},
     {id:"m5l4", title:"6D — Business registration (BRN) issues", html:`
       <p><strong>BRN</strong> = Business Registration Number, a catch-all for all registration number types: <strong>FEIN/EIN</strong> (US Federal Employer ID), <strong>BN</strong> (Canada Revenue Agency), <strong>CRN</strong> (UK Companies House), <strong>SIREN</strong> (France, INSEE).</p>
-      <p>Required for all business types except <strong>Sole Proprietor</strong> — with one caveat: a sole proprietor with an <strong>EIN</strong> should select <strong>Private Company</strong> as the business type and submit the EIN as the registration number. When required, fields must match the official record <strong>exactly</strong>: legal entity name (tied to the number), registration type, registration number, issuing country.</p>
+      <p>Required for all business types except <strong>Sole Proprietor</strong> — with one caveat: a sole proprietor with an <strong>EIN</strong> should select <strong>Private Profit</strong> as the business type (this is how Twilio Console labels the option — some older docs call it “Private Company”) and submit the EIN as the registration number. When required, fields must match the official record <strong>exactly</strong>: legal entity name (tied to the number), registration type, registration number, issuing country.</p>
       <div class="callout warn"><strong>Most common failure: a DBA submitted as the legal name</strong>ACME Inc, BRN 99-1234567, DBA "Acme" — submitting "Acme" is rejected because it doesn't exactly match the BRN record.</div>
       <ol>
         <li>Request official registration documentation if needed — <strong>CP-575</strong> or <strong>SS-4</strong> for the EIN, or <strong>Schedule C (Form 1040)</strong> for a sole proprietor with an EIN (shows name + EIN, so it works as proof of name/type/EIN).</li>
@@ -409,7 +411,7 @@ const MODULES = [
       <h3>Manually submitting TFV with a tax document</h3>
       <p>When <strong>manually submitting TFV</strong> with a tax document, we need to provide Twilio with a <strong>URL to view the document</strong> — the TFV submission in console does not support document uploads.</p>
       <ol>
-        <li>Add the document to the 📁 <strong>TFV - BRN Documents</strong> folder.</li>
+        <li>Add the document to the 📁 <a href="https://drive.google.com/drive/folders/16LuCZLWi231gj1Z1P-9UdROa6abUGsTq?usp=drive_link" target="_blank"><strong>TFV - BRN Documents</strong></a> folder.</li>
         <li>From the folder, click the kebab menu at far right → <strong>Share → Copy link</strong> to obtain the URL.</li>
         <li>Add the URL into the Twilio <strong>Additional Information</strong> field (see 6G1 — Resubmitting a rejected submission).</li>
       </ol>
@@ -449,7 +451,7 @@ const MODULES = [
       <h3>6G1 — Resubmitting a rejected submission</h3>
       <p>Previously submitted info <strong>auto-populates</strong> — double-check every field with the customer before sending.</p>
       <h4>Step 1 — Business &amp; contact info</h4>
-      <p>Verify against the BRN rules (6D). Sole Proprietor needs no BRN — but with an EIN, select Private Company and submit the EIN. All other types: exact-match registration details.</p>
+      <p>Verify against the BRN rules (6D). Sole Proprietor needs no BRN — but with an EIN, select Private Profit (Twilio Console's label; formerly “Private Company”) and submit the EIN. All other types: exact-match registration details.</p>
       ${IMG("step1","Step 1/3 — Business and contact information (auto-populated on resubmission)")}
       <h4>Step 2 — Business location</h4>
       <p>Must match the registered business info.</p>
@@ -465,12 +467,15 @@ const MODULES = [
         <tr><td>Use case description</td><td>Product Announcements, Sales and Deals, Welcome Series, and Abandoned Cart</td></tr>
         <tr><td>Sample message</td><td>[Account name]: Check out these deals! Text STOP to opt-out.</td></tr>
         <tr><td>Email for notifications</td><td>Leave blank or no-reply@klaviyo.com</td></tr>
+        <tr><td>Additional information</td><td>“Klaviyo manual resubmission: [insert any relevant additional information]”</td></tr>
       </table>
       ${IMG("step3_form","Step 3/3 — Messaging use case: fill the required fields, agree to the Terms of Service, then Send information for verification")}
       <div class="callout tip"><strong>Always use the Additional information field</strong>Tell Twilio's review team this is a manual resubmission by Klaviyo, plus anything that helps (privacy policy / AUP links, onboarding controls, why a Sole Proprietor needs no BRN, etc.). 500-character limit.</div>
       ${IMG("additional_info","Additional information field — add a note to Twilio's reviewers")}
       <h3>6G2 — New submission: released or ported-in TFN (Activations scope — for reference)</h3>
-      <p>Used when recovering a released TFN or submitting for a ported-in number. <strong>Per routing, this work goes to Activations</strong> — included so you recognize it and hand off. Differences from 6G1: pull first/last name + email from account users; use the website's public address, or the staffside account address if none is public; you may first be asked to select a business profile. Same 3-step workflow as 6G1.</p>
+      <p>Used when recovering a released TFN or submitting for a ported-in number. <strong>Per routing, this work goes to Activations</strong> — included so you recognize it and hand off.</p>
+      <p><strong>Identifying a recently ported TFN:</strong> check the <em>Port Requests (TFNs)</em> tab where Status = Done in the <a href="https://docs.google.com/spreadsheets/d/1RsF0EYxe-c1WcjurF3HhabF7lKS8G3x4z35sKYESNig/edit?gid=0#gid=0" target="_blank">Customer Shortcode &amp; Port Request Status</a> sheet.</p>
+      <p>Differences from 6G1: pull first/last name + email from account users; use the website's public address, or the staffside account address if none is public; you may first be asked to select a business profile. Same 3-step workflow as 6G1.</p>
       ${IMG("biz_profile","Business profile selection (shown for some new submissions)")}
     `},
     {id:"m5l8", title:"6H — Status won't update / out of sync", html:`
@@ -597,46 +602,27 @@ const CODES = [
  ["30484","Business name doesn't match official registration records","6D — exact-match legal name","coach","Business info"],
  ["30488","DBA name must accurately represent the business","6D — DBA vs legal-name rules","coach","Business info"],
  ["30527","Business registration number invalid or missing","6D — BRN/EIN; collect CP-575 / SS-4 / Schedule C","coach","Business info"],
- ["30474","End business required","6D; Activations if reseller/ISV context","coach","Business info"],
- ["30478","Single number used for multiple businesses","6C; escalate Pod if structural","coach","Business info"],
- ["30479","Justification needed for >5 toll-free numbers","Pod → Activations","activations","Business info"],
+ ["30474","End business required","6D — BRN/EIN; collect CP-575 / SS-4 / Schedule C","coach","Business info"],
+ ["30478","Single number used for multiple businesses","N/A — single TFN per account only","pod","Business info"],
+ ["30479","Justification needed for >5 toll-free numbers","N/A — single TFN per account only","pod","Business info"],
  ["30494","ISV / reseller company name required","Pod → Activations","activations","Business info"],
  ["30489","Website must be established, active, functional","Publish/complete site → re-Register","coach","Website & URLs"],
  ["30490","Social platform must be established and active","Same, for social-only businesses","coach","Website & URLs"],
  ["30491","Website password-protected or requires login","Remove gate → re-Register","coach","Website & URLs"],
  ["30492","Website must display business branding","Add branding → re-Register","coach","Website & URLs"],
- ["30449","URL issues in sample message","Fix sample-message URLs → resubmit","coach","Website & URLs"],
+ ["30449","URL issues in sample message","Customer re-submits → Pod → Backline (Linear bug ticket)","pod","Website & URLs"],
  ["30471","Non-secured (HTTP) URL in sample message","Use HTTPS → resubmit","coach","Website & URLs"],
  ["30525","Public URL shorteners (bit.ly etc.) not allowed","Remove shorteners → resubmit","coach","Website & URLs"],
- ["30523","High-risk domain reputation","Pod review → Activations if persistent","pod","Website & URLs"],
- ["30526","High-risk domain issues","Pod review → Activations if persistent","pod","Website & URLs"],
- ["30446","Express written consent required for use case","Fix opt-in flow → resubmit","coach","Opt-in / consent"],
- ["30475","Consent cannot be conditional on service","Fix opt-in flow → resubmit","coach","Opt-in / consent"],
- ["30476","No opt-in method provided","Provide proof of consent → resubmit","coach","Opt-in / consent"],
- ["30477","Opt-in data shared with third parties","Update privacy policy + opt-in → resubmit","coach","Opt-in / consent"],
- ["30520","Opt-in data shared with third parties","Update privacy policy + opt-in → resubmit","coach","Opt-in / consent"],
- ["30521","Privacy policy allows sharing","Update privacy policy + opt-in → resubmit","coach","Opt-in / consent"],
- ["30498","Opt-in workflow doesn't match description","Align submission with actual flow → resubmit","coach","Opt-in / consent"],
- ["30507","Opt-in workflow doesn't match use case","Align submission with actual flow → resubmit","coach","Opt-in / consent"],
- ["30504","Single opt-in cannot cover multiple use cases","Split or narrow use case → resubmit","coach","Opt-in / consent"],
- ["30505","Opt-in must be optional (not tied to purchase)","Fix checkout consent → resubmit","coach","Opt-in / consent"],
- ["30506","Opt-in must reflect the end business","Brand the opt-in → resubmit","coach","Opt-in / consent"],
- ["30508","Pre-selected opt-in checkbox not allowed","Uncheck by default → resubmit","coach","Opt-in / consent"],
- ["30509","Opt-in URL not accessible","Fix the proof-of-consent link → resubmit","coach","Opt-in / consent"],
- ["30510","Opt-in example incomplete or unbranded","Complete, branded example → resubmit","coach","Opt-in / consent"],
- ["30511","Verbal consent script required (phone opt-ins)","Provide script → resubmit","coach","Opt-in / consent"],
- ["30513","Opt-in language unclear","Fix per friendly message → resubmit","coach","Opt-in / consent"],
- ["30515","Valid opt-in required","Fix per friendly message → resubmit","coach","Opt-in / consent"],
- ["30516","Double opt-in required","Fix per friendly message → resubmit","coach","Opt-in / consent"],
- ["30518","Call-to-action missing required disclosures","Add freq., HELP/STOP, rates → resubmit","coach","Opt-in / consent"],
+ ["30523","High-risk domain reputation","Pod review → re-submit → Activations if persistent","pod","Website & URLs"],
+ ["30526","High-risk domain issues","Pod review → re-submit → Activations if persistent","pod","Website & URLs"],
  ["30493","Privacy policy or terms missing / inaccessible","Publish + link → resubmit","coach","Policies & alignment"],
  ["30519","Privacy policy or terms required","Publish + link → resubmit","coach","Policies & alignment"],
  ["30522","SMS terms inaccessible or non-compliant","Fix Mobile TOS link → resubmit","coach","Policies & alignment"],
  ["30486","HELP keyword response requirements not met","Fix HELP response → resubmit","coach","Policies & alignment"],
- ["30495","Projected volume exceeds use-case limits","Adjust volume estimate → resubmit","coach","Policies & alignment"],
- ["30496","Use case and summary inconsistent","Align fields → resubmit","coach","Policies & alignment"],
- ["30499","Use case and message content inconsistent","Align fields → resubmit","coach","Policies & alignment"],
- ["30503","Confirmation message missing key details","Add freq., HELP/STOP → resubmit","coach","Policies & alignment"],
+ ["30495","Projected volume exceeds use-case limits","Adjust volume estimate on manual Pod re-submit (6G1)","coach","Policies & alignment"],
+ ["30496","Use case and summary inconsistent","Align fields → 6G1 manual re-submit","coach","Policies & alignment"],
+ ["30499","Use case and message content inconsistent","Align fields → 6G1 manual re-submit","coach","Policies & alignment"],
+ ["30503","Confirmation message missing key details","Add freq., HELP/STOP → 6G1 manual re-submit","coach","Policies & alignment"],
  ["30517","Shopping cart reminder guidelines violated","Fix abandoned-cart flow description → resubmit","coach","Policies & alignment"],
  ["30487","501(c)(3) verification required (non-profits)","Collect docs → 6G1 manual resubmit","pod","Policies & alignment"],
  ["30501","Campaign Verify token required (political)","Pod → Activations (political registration)","activations","Policies & alignment"],
@@ -648,20 +634,26 @@ const CODES = [
  ["30007","Spam/unwanted filtering on a verified TFN (delivery error)","Best-practice compliance reduces filtering","coach","Delivery"]
 ];
 const PILL_LABEL = {compliance:"Compliance", coach:"Coach + resubmit", pod:"Pod", backline:"Backline", activations:"Activations"};
-/* Quick Reference — TFN rejection types */
+/* Quick Reference — TFN rejection types (organized by escalation tier, per the guide).
+   Single-element rows render as full-width tier headers. */
 const QUICK_REF = [
- ["1","Website not live / not viewable (“Unable to verify business”)","Publish/unlock site; customer re-Registers once live (not a bare landing page, no placeholder products)","Text Messaging::Send Numbers::TFN Verification Rejection::Website Inactive","Resub fails → D&C Pod"],
- ["2","Prohibited content — SHAFT (Sex, Hate, Alcohol, Firearms, Tobacco; incl. Cannabis/CBD)","Review site yourself. Real SHAFT → Compliance. Looks clean → treat as K0001 false positive (row 5)","Text Messaging::Send Numbers::TFN Verification Rejection::SHAFT Content","Confirmed prohibited → Compliance"],
- ["3","Prohibited content — non-SHAFT (loan marketing, third-party lead-gen/fraud, third-party debt collection)","Review site to confirm the category. Same path as SHAFT","—","Confirmed prohibited → Compliance"],
- ["4","Age gate missing / not acceptable (age_gate_required)","Review site: compliant DOB age gate required — a simple yes/no form is NOT compliant. Set up Klaviyo age gate, then resubmit (6E)","—","Customer pushback on requirement → Compliance"],
- ["5","K0001 — Klaviyo content score (false positive / Unknown / Empty)","Review site; if compliant, Pod resets score to None via recategorization tool → customer re-Registers (6B)","Zendesk tag: tfv_false_positive","Verified SHAFT found → Compliance"],
- ["6","Invalid business email","person@branddomain — business domain beats free email; list free email on site if it's all they have → re-Register (6C)","Text Messaging::Send Numbers::TFN Verification Rejection::Invalid Business Email","Resub fails → D&C Pod"],
- ["7","Invalid business address","Full, accurate business address matching the website → re-Register","Text Messaging::Send Numbers::TFN Verification Rejection::Invalid Business Address","Resub fails → D&C Pod"],
- ["8","Invalid business phone","Working public business number (it will NOT be called or verified) → re-Register","Text Messaging::Send Numbers::TFN Verification Rejection::Invalid Phone Number","Resub fails → D&C Pod"],
- ["9","Business info not valid / cannot verify business / BRN mismatch","Align website, email, phone, address, and exact-match BRN details → re-Register (6C–6D)","Text Messaging::Send Numbers::TFN Verification Rejection::Cannot Verify Business","Resub fails → D&C Pod; BRN matches but still rejects → Activations"],
- ["10","K0002 / K0003 — processing error / duplicate-submission bug","General processing error; customer resubmits via Register","—","Always → Backline (bug log)"],
- ["11","Stuck “in-progress” > 7 business days","Pod deletes verification in Twilio → Sync Verification in staffside → customer re-Registers (6F)","—","Status won't sync → 6H"],
- ["12","Incomplete / ported-in or released TFN not yet submitted","Do not work at Frontline or Pod level","—","Directly → Activations"]
+ ["TIER 1 — Frontline · first touch (applies to every ticket). Attempt to resolve on first touch: match the rejection and apply the primary fix. Escalate anything you can't resolve. Prohibited-content, ported/released-number, and processing-bug rows are direct escalations — route them to the team shown."],
+ ["→ TIER 2 — D&C Pod (Frontline attempts first touch; lands here when unresolved)"],
+ ["1","Invalid business email","Personal business email that aligns with the website: person@branddomain — business domain beats free email; list free email on site if it's all they have → re-submit (6C)","Text Messaging::Send Numbers::TFN Verification Rejection::Invalid Business Email","Re-submission keeps failing → Pod resubmits manually (6G1)"],
+ ["2","Invalid business address","Full, accurate business address matching the website → re-submit (6C)","Text Messaging::Send Numbers::TFN Verification Rejection::Invalid Business Address","Re-submission keeps failing → Pod resubmits manually (6G1)"],
+ ["3","Invalid business phone","Working public business number (it will NOT be called or verified) → re-submit (6C)","Text Messaging::Send Numbers::TFN Verification Rejection::Invalid Phone Number","Re-submission keeps failing → Pod resubmits manually (6G1)"],
+ ["4","Website not live / not viewable (“Unable to verify business”)","Publish/unlock site; re-Register once live (not a bare landing page, no placeholder products)","Text Messaging::Send Numbers::TFN Verification Rejection::Website Inactive","Failing after site is live → Pod resubmits manually (6G1)"],
+ ["5","Stuck “in-progress” > 7 business days","Pod deletes verification in Twilio → Sync Verification in staffside → customer re-submits (6F)","—","Status won't sync → 6H"],
+ ["6","K0001 — Klaviyo content score (false positive / Unknown / Empty)","Pod reviews site; if compliant, resets score to None via recategorization tool → customer re-submits (6B)","Zendesk tag: tfv_false_positive","Verified SHAFT found → Compliance"],
+ ["7","Age gate missing / not acceptable (age_gate_required)","Compliant DOB age gate required — a simple yes/no form is NOT compliant. Set up Klaviyo age gate → resubmit (6E)","—","Customer pushback on requirement → Compliance"],
+ ["→ TIER 3 — Escalate to Backline (processing bugs)"],
+ ["8","K0002 / K0003 — processing error / duplicate-submission bug","General processing error; customer resubmits after the bug ticket is resolved","Transfer Ticket::Email Escalation to Backline","Always → Backline (bug log)"],
+ ["→ TIER 4 — Escalate to Activations"],
+ ["9","Incomplete / ported-in or released TFN not yet submitted","Recommend the customer double-check submitted information, then resubmit","Transfer Ticket::Escalate to Activations","When resubmission fails → Activations"],
+ ["10","Business info not valid / cannot verify business / BRN mismatch","Align website, email, phone, address + exact-match BRN → re-Register; Pod collects CP-575 / SS-4 if needed (6C–6D)","Text Messaging::Send Numbers::TFN Verification Rejection::Cannot Verify Business","BRN matches but still rejects → Activations"],
+ ["→ TIER 5 — Escalate to Compliance (confirmed prohibited content)"],
+ ["11","Prohibited content — SHAFT (Sex, Hate, Alcohol, Firearms, Tobacco; incl. Cannabis/CBD)","Review site yourself. Real SHAFT → Compliance. Looks clean → treat as K0001 false positive (row 6)","Transfer Ticket::Escalate to Compliance","Confirmed prohibited → Compliance"],
+ ["12","Prohibited content — non-SHAFT (loan marketing, third-party lead-gen/fraud, third-party debt collection)","Review site to confirm the category. Same path as SHAFT","Transfer Ticket::Escalate to Compliance","Confirmed prohibited → Compliance"]
 ];
 /* ============ APP LOGIC ============ */
 // Flatten lessons + quizzes into an ordered list of "pages"
@@ -800,7 +792,9 @@ function go(i){ current = Math.max(0, Math.min(PAGES.length-1, i)); renderSideba
 document.getElementById("qr-body").innerHTML =
   `<p style="font-size:13px;color:var(--muted);margin-bottom:10px">Use this while working a live ticket. Match the rejection shown in-app or in staffside, apply the primary fix and macro, and escalate only per the last column.</p>
   <table><tr><th>#</th><th>Rejection / friendly message</th><th>Primary fix</th><th>Macro</th><th>Escalate when</th></tr>` +
-  QUICK_REF.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td style="font-size:11.5px">${r[3]}</td><td>${r[4]}</td></tr>`).join("") + `</table>`;
+  QUICK_REF.map(r=> r.length===1
+    ? `<tr><td colspan="5" style="background:var(--green-light);color:var(--green-dark);font-weight:700;font-size:12px">${r[0]}</td></tr>`
+    : `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td style="font-size:11.5px">${r[3]}</td><td>${r[4]}</td></tr>`).join("") + `</table>`;
 
 /* ---- Error code lookup ---- */
 function renderCodes(filter){
