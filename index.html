@@ -170,7 +170,8 @@ const IMAGES = {
   step3_form:       DRIVE_IMG("18N6XWtKlo60KfglC3jGQOaW59dQmcGGy"),
   additional_info:  DRIVE_IMG("1ZoMnsLu0lxw4-a2J_C5zGZuKZOoOqJP8"),
   biz_profile:      DRIVE_IMG("11IPd57FcreK8a0ZzPEmJlhyj8Yh-clox"),
-  brn_doc_share:    DRIVE_IMG("1QikXhzScoYUwyk6QoZKzv3IL6Ijw1BEo")
+  brn_doc_share:    DRIVE_IMG("1QikXhzScoYUwyk6QoZKzv3IL6Ijw1BEo"),
+  sms_adjustments:  DRIVE_IMG("1uK4YD7FOaIWumNuE7pC1zOkqIiVKM371")
 };
 function imgFail(el){
   const fig = el.closest("figure");
@@ -202,9 +203,9 @@ const MODULES = [
     {id:"m1l2", title:"Your tools", html:`
       <p>You'll work with three tools on TFV tickets:</p>
       <ul>
-        <li><strong>Staffside Mobile tab</strong> — number status, rejection reason / Provider Error Code, Sync Verification, Release Number.</li>
         <li><strong>Twilio Console (subaccount)</strong> — vendor rejection detail and manual resubmission.</li>
-        <li><strong>Prohibited-content recategorization tool</strong> — reset a false-positive content score to "None".</li>
+        <li><strong>Staffside Mobile tab</strong> — number status, rejection reason / Provider Error Code, Sync Verification, Release Number.</li>
+        <li><strong>Detected-content recategorization tool</strong> — reset a false-positive (or Unknown/Empty) content score to "None".</li>
       </ul>
       <div class="callout tip"><strong>Golden rule</strong>Always confirm you're in the right subaccount before doing anything in Twilio — search by the <strong>KA (account ID)</strong> on your ticket. Never act in a subaccount that doesn't match the ticket in front of you. The subaccount tag is clearly listed at the top of the page.</div>
       ${IMG("subaccount_tag","Twilio Console — subaccount tag shown at the top of the page")}
@@ -227,15 +228,33 @@ const MODULES = [
         <ul style="margin:6px 0 0 18px">
           <li><strong>Delete a verification</strong> — only for a stuck verification in-progress &gt;7 business days (Workflow 6F). Never casually.</li>
           <li><strong>Manual TFV resubmission</strong> — only through Workflow 6G, with the "Klaviyo manual resubmission" note in Additional Information.</li>
-          <li><strong>Release a number from Staffside</strong> — only per Workflow 6H. Ported-in / recovery work goes to Activations.</li>
         </ul>
       </div>
+      <div class="callout info"><strong>Releasing a number?</strong>That's a Staffside action with its own rules — see the Staffside Mobile tab lesson next and Workflow 6H. Ported-in / recovery work goes to Activations.</div>
       <div class="callout warn"><strong>Prompts to ignore:</strong>
         <ul style="margin:6px 0 0 18px">
           <li>"Add an emergency address (or incur a $75 charge per emergency call)" — click <strong>IGNORE</strong>; do not add an emergency address.</li>
           <li>Don't hit <strong>"Register again" repeatedly</strong> — it can create duplicate submissions.</li>
         </ul>
       </div>
+    `},
+    {id:"m1l3b", title:"⚠ Staffside Mobile tab — what to touch", html:`
+      <p>In Staffside's Mobile tab, D&amp;C Activations and Compliance can disable SMS accounts, release numbers, update RCS status, port numbers, and sync/reset verification. <strong>Most of that is out of scope for the Pod.</strong></p>
+      <div class="callout danger"><strong>Do not:</strong>
+        <ul style="margin:6px 0 0 18px">
+          <li>Disable SMS.</li>
+          <li>Update anything related to <strong>RCS</strong>.</li>
+          <li>Release <strong>non-TFN</strong> phone numbers.</li>
+          <li>Release a TFN any way other than the black <strong>Release Number</strong> button in the Mobile Numbers section — and only when following Workflow 6H.</li>
+        </ul>
+      </div>
+      <div class="callout tip"><strong>The Pod uses the Mobile tab for exactly two things:</strong>
+        <ul style="margin:6px 0 0 18px">
+          <li><strong>Reviewing the Detected Content score</strong> — then using the recategorization tool to update it (Workflow 6B).</li>
+          <li><strong>Sync Verification</strong> for TFNs where the Twilio and Klaviyo statuses don't align (Workflows 6F / 6H).</li>
+        </ul>
+      </div>
+      <div class="callout info"><strong>Detected-content recategorization tool</strong>A single-use staffside tool that resets a false content score. Use it to set <strong>Unknown/Empty or false-positive SHAFT scores to "None"</strong>, letting the customer resubmit and bypass a false-positive K0001 rejection. <a href="https://www.klaviyo.com/staff/mobile/prohibited-content-recategorization" target="_blank">klaviyo.com/staff/mobile/prohibited-content-recategorization</a></div>
     `},
     {id:"m1l4", title:"Customer communication rules", html:`
       <ul>
@@ -485,8 +504,13 @@ const MODULES = [
       <p>For urgent requests from high-MRR customers, unblock faster by offering a release-and-replace:</p>
       <ul>
         <li><strong>Option 1 — customer-resolved:</strong> instruct the customer to release the TFN, wait 24 hours, request a new TFN, and resubmit verification. Use when the customer isn't urgent and hasn't reported multiple rejections.</li>
-        <li><strong>Option 2 — PE-resolved:</strong> from the account's Mobile tab → Actions → Release Number, then ask the customer to request a new TFN (they'll be prompted back through registration). Use for high-MRR urgent requests or escalated customers with multiple rejections.</li>
+        <li><strong>Option 2 — PE-resolved:</strong> from the account's Mobile tab → Actions → <strong>Release Number</strong> (black button, in the Mobile Numbers section), then ask the customer to request a new TFN (they'll be prompted back through registration). Use for high-MRR urgent requests or escalated customers with multiple rejections.</li>
       </ul>
+      <div class="callout danger"><strong>Use the right button — black, not red</strong>When releasing a TFN, use <strong>only the black “Release Number” button</strong> next to the TFN in the <strong>Mobile Numbers</strong> section. <strong>Never</strong> use the red <strong>“Release phone numbers” button</strong> in the SMS Number Adjustments section.</div>
+      <p style="margin:14px 0 4px"><strong>✅ YES — black “Release Number” button (Mobile Numbers section):</strong></p>
+      ${IMG("staffside_mobile","YES — release a TFN with the black Release Number button in the Mobile Numbers section")}
+      <p style="margin:14px 0 4px"><strong>🚫 NO — red “Release phone numbers” button (SMS Number Adjustments section):</strong></p>
+      ${IMG("sms_adjustments","NO — do not use the red Release phone numbers button in SMS Number Adjustments")}
       <div class="callout warn"><strong>Know these two platform behaviors before advising a release</strong>
         <ul style="margin:6px 0 0 18px">
           <li><strong>US/CA TFN is one number.</strong> Releasing the US TFN releases the CA TFN too (and vice versa) — warn the customer both regions are affected.</li>
