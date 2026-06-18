@@ -155,23 +155,26 @@
 <script>
 /* ============ CONTENT DATA ============ */
 const SHOT = (caption) => `<div class="shot"><div class="cam">📷</div><p><strong>Screenshot placeholder:</strong> ${caption}</p></div>`;
-/* Screenshots served from the shared Drive folder (viewers need link access). */
-const DRIVE_IMG = (id) => `https://drive.google.com/thumbnail?id=${id}&sz=w1600`;
+/* Screenshots are served locally from the repo's images/ folder (committed next to
+   index.html). Drive embeds don't render on a public site, so images are hosted in-repo. */
 const IMAGES = {
-  subaccount_tag:   DRIVE_IMG("13z53zLri_51WXYTTNR2dPr69mEJ1OcMi"),
-  inapp_rejection:  DRIVE_IMG("1vNK8gGmD688wgMDW0NJY3mrs5WrYf0q3"),
-  configure_tab:    DRIVE_IMG("183VsJpSr7bIjHtq7tZpO4LySv0gnbDgf"),
-  review_info:      DRIVE_IMG("1BBZuoyd5Lj4oYJHV1p6Udo9Ya0jSrDoh"),
-  reg_info_progress:DRIVE_IMG("1S4P9UdwNKnf1PLbIhaxtNeAb9ubzFqLB"),
-  staffside_mobile: DRIVE_IMG("1eD4cPZSp6o0eSxX2WpFH83_jsg6ZSwio"),
-  active_numbers:   DRIVE_IMG("100KlXgYn8CbK3QKLMphkx1uz3S85o0LR"),
-  step1:            DRIVE_IMG("13bj-HPej6YEpDSVVkqG9qEON3vCWoBI5"),
-  step2:            DRIVE_IMG("1mMITAHJMKX4nlHfrzzkMKGPVvpJhNsxc"),
-  step3_form:       DRIVE_IMG("18N6XWtKlo60KfglC3jGQOaW59dQmcGGy"),
-  additional_info:  DRIVE_IMG("1ZoMnsLu0lxw4-a2J_C5zGZuKZOoOqJP8"),
-  biz_profile:      DRIVE_IMG("11IPd57FcreK8a0ZzPEmJlhyj8Yh-clox"),
-  brn_doc_share:    DRIVE_IMG("1QikXhzScoYUwyk6QoZKzv3IL6Ijw1BEo"),
-  sms_adjustments:  DRIVE_IMG("1uK4YD7FOaIWumNuE7pC1zOkqIiVKM371")
+  subaccount_tag:    "images/subaccount_tag.png",
+  inapp_rejection:   "images/inapp_rejection.png",
+  configure_tab:     "images/configure_tab.png",
+  review_info:       "images/review_info.png",
+  reg_info_progress: "images/reg_info_progress.png",
+  staffside_mobile:  "images/staffside_mobile.png",
+  staffside_sync:    "images/staffside_sync.png",
+  staffside_detected:"images/staffside_detected.png",
+  staffside_recat:   "images/staffside_recat.png",
+  active_numbers:    "images/active_numbers.png",
+  step1:             "images/step1.png",
+  step2:             "images/step2.png",
+  step3_form:        "images/step3_form.png",
+  additional_info:   "images/additional_info.png",
+  biz_profile:       "images/biz_profile.png",
+  brn_doc_share:     "images/brn_doc_share.png",
+  sms_adjustments:   "images/sms_adjustments.png"
 };
 function imgFail(el){
   const fig = el.closest("figure");
@@ -254,7 +257,9 @@ const MODULES = [
           <li><strong>Sync Verification</strong> for TFNs where the Twilio and Klaviyo statuses don't align (Workflows 6F / 6H).</li>
         </ul>
       </div>
+      ${IMG("staffside_detected","Staffside Mobile tab — the Detected Content score")}
       <div class="callout info"><strong>Detected-content recategorization tool</strong>A single-use staffside tool that resets a false content score. Use it to set <strong>Unknown/Empty or false-positive SHAFT scores to "None"</strong>, letting the customer resubmit and bypass a false-positive K0001 rejection. <a href="https://www.klaviyo.com/staff/mobile/prohibited-content-recategorization" target="_blank">klaviyo.com/staff/mobile/prohibited-content-recategorization</a></div>
+      ${IMG("staffside_recat","Staffside recategorization tool — reset a false content score to None")}
     `},
     {id:"m1l4", title:"Customer communication rules", html:`
       <ul>
@@ -508,7 +513,7 @@ const MODULES = [
       </ul>
       <div class="callout danger"><strong>Use the right button — black, not red</strong>When releasing a TFN, use <strong>only the black “Release Number” button</strong> next to the TFN in the <strong>Mobile Numbers</strong> section. <strong>Never</strong> use the red <strong>“Release phone numbers” button</strong> in the SMS Number Adjustments section.</div>
       <p style="margin:14px 0 4px"><strong>✅ YES — black “Release Number” button (Mobile Numbers section):</strong></p>
-      ${IMG("staffside_mobile","YES — release a TFN with the black Release Number button in the Mobile Numbers section")}
+      ${IMG("staffside_sync","YES — release a TFN with the black Release Number button in the Mobile Numbers section")}
       <p style="margin:14px 0 4px"><strong>🚫 NO — red “Release phone numbers” button (SMS Number Adjustments section):</strong></p>
       ${IMG("sms_adjustments","NO — do not use the red Release phone numbers button in SMS Number Adjustments")}
       <div class="callout warn"><strong>Know these two platform behaviors before advising a release</strong>
